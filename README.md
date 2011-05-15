@@ -80,7 +80,7 @@ For now, this plugin only provides basic S3 functionality. It is my hope that ov
 		'folder' => 'some/folder/',
 		'type' => 'image/jpeg'
 	));
-	$specific_object_deleted = $this->S3Object->delete('some-image.jpg');
+	$specific_object_deleted = $this->S3Object->delete('some-bucker:some/folder/some-image.jpg');
 	if ($jpegs_in_folder_deleted && $specific_object_deleted) {
 		$output = 'All of the JPEGs in some/folder/ plus the specific image you selected were deleted';
 	}
