@@ -748,42 +748,6 @@ class S3BaseSource extends DataSource {
 		
 		return false;
 		
-		if (empty($conditions) && !empty($model->id)) {
-			$conditions = array($model->alias . '.' . $model->primaryKey => $model->id);
-		}
-		
-		if (empty($conditions)) {
-			$this->showError(__($model->alias . '.' . $model->primaryKey . ' must be set in order to delete', true));
-			return false;
-		}
-		
-		if (
-			count($conditions) == 1 && 
-			key($conditions) == $model->alias . '.' . $model->primaryKey
-		) {
-			$ids = array_shift($conditions);
-		} else {
-			$ids = array_values($model->find('list', array(
-				'fields' => array($model->primaryKey),
-				'conditions' => $conditions
-			)));
-		}
-		
-		$this->_loadLibrary();
-		
-		$result = true;
-		
-		foreach ($ids as $id) {
-			try{
-				$result = ($result && $this->S3->deleteBucket($id)) ? true : false;
-			} catch (S3Exception $e) {
-				$this->showError($e);
-				$result = false;
-			}
-		}
-		
-		return $result;
-		
 	}
 	
 	/**
