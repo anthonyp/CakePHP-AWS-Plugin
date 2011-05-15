@@ -6,7 +6,7 @@ For now, this plugin only provides basic S3 functionality. It is my hope that ov
 
 ## Installation
 
-1. Extract the downloaded archive from [here](http://github.com/anthonyp/CakePHP-AWS-Plugin/tarball/master)
+1. Extract the downloaded archive from [here](http://github.com/anthonyp/CakePHP-AWS-Plugin/zipball/master)
 2. Move or copy the extracted directory anthonyp-CakePHP-AWS-Plugin-[hash] to /path/to/your/app/plugins/aws
 3. Copy the AWS setting stubs from the plugin's config/core.php into your app's config/core.php and modify to suit
 
@@ -115,16 +115,16 @@ For now, this plugin only provides basic S3 functionality. It is my hope that ov
 ## Roadmap
 
 * S3
-** Save & retrieve metadata with objects
-** Save & retrieve storage classes for objects
-** Object versioning
-** Multipart uploads
-** Website configs (subdomains)
-** Bucket logging
-** Retrieve a secure temporary web or torrent URL for an object
+    - Save & retrieve metadata with objects
+	- Save & retrieve storage classes for objects
+    - Object versioning
+    - Multipart uploads
+    - Website configs (subdomains)
+    - Bucket logging
+    - Retrieve a secure temporary web or torrent URL for an object
 * General
-** Unit tests
-** Integration with EC2, RD2, SQS, SES, CloudFront, and more
+    - Unit tests
+    - Integration with EC2, RD2, SQS, SES, CloudFront, and more
 
 ## Known Issues
 
