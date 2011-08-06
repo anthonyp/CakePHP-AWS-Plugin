@@ -133,7 +133,7 @@ class S3ObjectSource extends S3BaseSource {
 		
 		$new_objects = $this->_formatObjectsResponse($response);
 		
-		$last_file = $new_objects[(count($new_objects)-1)]['name'];
+		$last_file = !empty($new_objects) ? $new_objects[(count($new_objects)-1)]['name'] : false;
 		
 		// Don't include folders, just actual files
 		foreach ($new_objects as $key => $object) {
@@ -153,9 +153,9 @@ class S3ObjectSource extends S3BaseSource {
 		
 		$options = array_merge(
 			$options,
-			array(
+			!empty($last_file) ? array(
 				'marker' => $last_file
-			)
+			) : array()
 		);
 		
 		$objects = $this->_getObjects($bucket, $options, $objects);
@@ -234,15 +234,17 @@ class S3ObjectSource extends S3BaseSource {
 			return false;
 		}
 		
-		$finfo = new finfo(FILEINFO_MIME);
-		$mime_type = array_shift(explode(';', $finfo->buffer($data['data'])));
+		if (empty($data['type'])) {
+			$finfo = new finfo(FILEINFO_MIME);
+			$data['type'] = array_shift(explode(';', $finfo->buffer($data['data'])));
+		}
 		
 		$result = $this->_getResponse('S3', 'create_object', array(
 			$data['bucket'],
 			$data['folder'] . $data['name'],
 			array(
 				'body' => $data['data'],
-				'contentType' => $mime_type,
+				'contentType' => $data['type'],
 				'acl' => $data['acl']
 			)
 		)) ? true : false;
@@ -271,7 +273,7 @@ class S3ObjectSource extends S3BaseSource {
 	 */
 	public function update (&$model, $fields = null, $values = null) {
 		
-		$this->showError(__('Cannot update a bucket', true));
+		$this->showError(__('Cannot update an object', true));
 		
 		return false;
 		

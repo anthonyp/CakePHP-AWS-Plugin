@@ -649,7 +649,22 @@ class S3BaseSource extends DataSource {
 		}
 		
 		foreach ($conditions as $field => $value) {
+			if (strpos($value['value'], '/') !== false) {
+				$value['value'] = str_replace('/', '---DEL---', $value['value']);
+				foreach ($data as $k => $v) {
+					if (!empty($data[$k][$model->alias][$field])) {
+						$data[$k][$model->alias][$field] = str_replace('/', '---DEL---', $data[$k][$model->alias][$field]);
+					}
+				}
+			}
 			$data = Set::extract('/' . $model->alias . '[' . $field . $value['operator'] . $value['value'] . ']', $data);
+			if (strpos($value['value'], '---DEL---') !== false) {
+				foreach ($data as $k => $v) {
+					if (!empty($data[$k][$model->alias][$field])) {
+						$data[$k][$model->alias][$field] = str_replace('---DEL---', '/', $data[$k][$model->alias][$field]);
+					}
+				}
+			}
 		}
 		
 		return $data;
