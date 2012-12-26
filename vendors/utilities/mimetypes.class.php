@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2010-2011 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -218,6 +218,7 @@ class CFMimeTypes
 	 */
 	public static function get_mimetype($ext)
 	{
-		return (isset(self::$mime_types[$ext]) ? self::$mime_types[$ext] : 'application/octet-stream');
+		$ext = strtolower($ext);  // Make sure the passed in extension is lowercase
+		return isset(self::$mime_types[$ext]) ? self::$mime_types[$ext] : 'application/octet-stream';
 	}
 }

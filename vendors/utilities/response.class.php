@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2010-2011 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@
 // CLASS
 
 /**
- * Wraps the underlying `ResponseCore` class with some AWS-specific customizations.
+ * Wraps the underlying `ResponseCore` class with some AWS-specific customizations. Response
+ * bodies are typically represented as CFSimpleXML objects.
  *
  * @version 2010.10.11
  * @license See the included NOTICE.md file for more information.
