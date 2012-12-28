@@ -40,7 +40,6 @@ class DynamodbSource extends DataSource {
         if ($autoConnect) {
             return $this->connect();
         }
-        return true;
     }
     
     public function setConfig($config = array()) {
@@ -84,11 +83,21 @@ class DynamodbSource extends DataSource {
         return $this->connection->list_tables()->body->TableNames()->map_string();
     }
     
+    // @working
+    public function calculate(&$model) {
+        return 'count';
+    }
+    
+    // @working
+    public function describe(&$model) {
+        return $model->_schema;
+    }
+    
+    // @working
     public function create($options = array()) {
         if (!$this->connected) {
             return false;
         }
-        
     }
     
     public function read(&$model, $query = array()) {
@@ -117,16 +126,27 @@ class DynamodbSource extends DataSource {
         }
     }
     
+    // @working
     public function update($options = array()) {
         if (!$this->connected) {
             return false;
         }
+        
     }
     
-    public function delete($options = array()) {
+    public function delete(&$model, $conditions = null) {
         if (!$this->connected) {
             return false;
         }
+        $options = array(
+            'TableName' => $model->table,
+            'Key' => array(
+                'HashKeyElement' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => (string)$model->id
+                )
+            )
+        );
+        return $this->connection->delete_item($options);
     }
     
     public function query() {
@@ -134,13 +154,23 @@ class DynamodbSource extends DataSource {
             return false;
         }
         $args = func_get_args();
-        if (is_string($args[0]) && method_exists($this->connection, $args[0])) {
+        // A workaround to delete call that is not working as expected 
+        // for a reason that I don't know right now
+        if ($args[0] == 'del') {
+            return $this->delete($args[2], $args[1]);
+        }
+        if (is_string($args[0]) && (method_exists($this, $args[0]) || method_exists($this->connection, $args[0]))) {
+            if (method_exists($this, $args[0])) {
+                $class = &$this;
+            } else {
+                $class = &$this->connection;
+            }
             debug($args[0]);
             $options = array();
             if (!empty($args[1][0])) {
                 $options = $args[1][0];
             }
-            return call_user_func(array($this->connection, $args[0]), $options);
+            return call_user_func(array($class, $args[0]), $options);
         }
         debug(__FUNCTION__);
         return $this->connection->query($args[0]);
@@ -170,8 +200,17 @@ class DynamodbSource extends DataSource {
         return $result;
     }
     
-    public function __toArray($data) {
+    public function __toArray($data = array()) {
         return json_decode(json_encode((array)$data), 1);
+    }
+    
+    // @working
+    public function __setType($data = array()) {
+        
+    }
+    // @working
+    public function __getType($data = array()) {
+        
     }
     
 }
