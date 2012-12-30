@@ -212,7 +212,7 @@ class DynamodbSource extends DataSource {
      *        $model->data will be used to generate field names.
      * @param array $values An array of values with keys matching the fields. 
      *        If null, $model->data will be used to generate values. 
-     * @return boolean Success
+     * @return boolean Success.
      * @since 0.1
      */
     public function create(&$model, $fields = null, $values = null) {
@@ -299,7 +299,7 @@ class DynamodbSource extends DataSource {
      *        $model->data will be used to generate field names.
      * @param array $values An array of values with keys matching the fields. 
      *        If null, $model->data will be used to generate values.
-     * @return void
+     * @return boolean Success.
      * @since 0.1
      */
     public function update(&$model, $fields = null, $values = null) {
@@ -326,9 +326,9 @@ class DynamodbSource extends DataSource {
      *
      * Delete a record from the database.
      *
-     * @param object $model Model object 
-     * @param string $conditions 
-     * @return void
+     * @param object $model Model object that the record is for.
+     * @param mixed $conditions The conditions to use for deleting.
+     * @return boolean Success.
      * @since 0.1
      */
     public function delete(&$model, $conditions = null) {
@@ -563,12 +563,14 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * undocumented function
+     * Set a String primary key
      *
-     * @param string $model 
-     * @param string $name 
-     * @param string $data 
-     * @return void
+     * Set with the current data array or create.
+     *
+     * @param object $model Model object.
+     * @param string $name Primary key name.
+     * @param array $data Data array with key/values.
+     * @return array An array with key/value.
      * @since 0.1
      */
     public function _setStringPrimaryKey(&$model, $name = null, $data = array()) {
@@ -588,12 +590,14 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * undocumented function
+     * Set a Number primary key
      *
-     * @param string $model 
-     * @param string $name 
-     * @param string $data 
-     * @return void
+     * Set with the current data array or create.
+     *
+     * @param object $model Model object.
+     * @param string $name Primary key name.
+     * @param array $data Data array with key/values.
+     * @return array An array with key/value.
      * @since 0.1
      */
     public function _setNumberPrimaryKey(&$model, $name = null, $data = array()) {
@@ -613,12 +617,14 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * undocumented function
+     * Set a Binary primary key
      *
-     * @param string $model 
-     * @param string $name 
-     * @param string $data 
-     * @return void
+     * Set with the current data array or create.
+     *
+     * @param object $model Model object.
+     * @param string $name Primary key name.
+     * @param array $data Data array with key/values.
+     * @return array An array with key/value.
      * @since 0.1
      */
     public function _setBinaryPrimaryKey(&$model, $name = null, $data = array()) {
@@ -638,11 +644,11 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * undocumented function
+     * Set attributes for update call
      *
-     * @param string $model 
-     * @param string $data 
-     * @return void
+     * @param object $model Model object.
+     * @param array $data An array of key/values for update.
+     * @return array An array of attributes.
      * @since 0.1
      */
     public function _setAttributeUpdates(&$model, $data) {
@@ -660,10 +666,10 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * undocumented function
+     * Set values data types for an array of values
      *
-     * @param string $data 
-     * @return void
+     * @param array $data An array of values to set data types.
+     * @return array An array of values with data types set.
      * @since 0.1
      */
     public function _setVarTypes($data = array()) {
@@ -726,11 +732,11 @@ class DynamodbSource extends DataSource {
     /**
      * Prepare log query.
      *
-     * @param string $model Model object.
+     * @param object $model Model object.
      * @return boolean Success.
      * @since 0.1
      */
-    protected function _prepareLogQuery(&$model) {
+    public function _prepareLogQuery(&$model) {
         if (!$this->fullDebug) {
             return false;
         }
