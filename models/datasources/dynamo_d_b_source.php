@@ -71,7 +71,6 @@ class DynamodbSource extends DataSource {
         if ($autoConnect) {
             return $this->connect();
         }
-        return true;
     }
     
     /**
@@ -152,9 +151,9 @@ class DynamodbSource extends DataSource {
      * @since 0.1
      */
     public function close() {
-        if (Configure::read('debug') > 1) {
-            $this->showLog();
-        }
+        // if (Configure::read('debug') > 1) {
+        //     $this->showLog();
+        // }
         return $this->disconnect();
     }
     
@@ -238,7 +237,7 @@ class DynamodbSource extends DataSource {
             'Item' => $data
         );
         $result = $this->connection->put_item($options);
-        if (!empty($result)) {
+        if (!empty($result) && $result->status == 200) {
             $model->setInsertId($this->_getPrimaryKeyValue($data[$model->primaryKey]));
             $model->id = $this->_getPrimaryKeyValue($data[$model->primaryKey]);
             return true;
@@ -251,6 +250,7 @@ class DynamodbSource extends DataSource {
      *
      * Reads record(s) from the database.
      *
+     * @todo Support for Hash and Range primary keys.
      * @param object $model A Model object that the query is for.
      * @param array $query An array of queryData information containing 
      *        keys similar to Model::find().
@@ -263,21 +263,16 @@ class DynamodbSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
-        $params = array(
-            'TableName' => $model->table
-        );
         if (!empty($query['conditions'])) {
             $key = $query['conditions'][$model->alias .'.'. $model->primaryKey];
-            if (isset($key)) {
-                $params['Key'] = array(
-                    'HashKeyElement' => array(AmazonDynamoDB::TYPE_NUMBER => (string)$key)
-                );
-            } else {
-                $params['Key'] = array(
-                    'HashKeyElement' => array(AmazonDynamoDB::TYPE_NUMBER => (string)$model->id)
-                );
+            if (empty($key)) {
+                $key = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
             }
-            $response = $this->connection->get_item($params);
+            $options = array(
+                'TableName' => $model->table,
+                'Key' => array('HashKeyElement'=>$this->_setVarType($key)),
+            );
+            $response = $this->connection->get_item($options);
             $results = $this->_parseItem($model, $response);
         } else {
             $response = $this->connection->scan($params);
