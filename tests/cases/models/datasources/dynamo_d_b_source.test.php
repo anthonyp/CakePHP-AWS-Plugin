@@ -81,27 +81,67 @@ class Post extends AppModel {
  * @subpackage    datasources.tests.cases.models.datasources
  */
 class DynamoDBTestCase extends CakeTestCase {
-
+    
+    /**
+     * Skip test Amazon DynamoDB API
+     *
+     * Set to false tests completes faster
+     *
+     * @var boolean
+     */
+    public $skipTestAmazonDynamodbAPI = true;
+    
+    /**
+     * Skip test create_table
+     *
+     * This takes a lot of time, set to TRUE is recommended
+     *
+     * @var boolean
+     */
+    public $skipTestCreateTable = true;
+    
+    /**
+     * Skip test delete_table
+     *
+     * This takes a lot of time, set to TRUE is recommended
+     *
+     * @var boolean
+     */
+    public $skipTestDeleteTable = true;
+    
+    /**
+     * Skip test update_table
+     *
+     * This takes a lot of time, set to TRUE is recommended
+     *
+     * @var boolean
+     */
+    public $skipTestUpdateTable = true;
+    
+    /**
+     * Create test tables
+     *
+     * This takes a lot of time, set to FALSE is recommended
+     *
+     * @var string
+     */
+    public $create_test_tables = false;
+    
+    /**
+     * Create test data
+     *
+     * This takes a lot of time, set to FALSE is recommended
+     *
+     * @var string
+     */
+    public $create_test_data = false;
+    
     /**
      * DynamoDB Datasource object
      *
      * @var object
      */
     public $DynamoDB = null;
-    
-    /**
-     * Created test tables
-     *
-     * @var boolean
-     */
-    public $created_test_tables = false;
-    
-    /**
-     * Created test data
-     *
-     * @var boolean
-     */
-    public $created_test_data = false;
     
     /**
      * One day ago
@@ -146,6 +186,20 @@ class DynamoDBTestCase extends CakeTestCase {
     );
     
     /**
+     * Created test tables
+     *
+     * @var boolean
+     */
+    public $created_test_tables = false;
+    
+    /**
+     * Created test data
+     *
+     * @var boolean
+     */
+    public $created_test_data = false;
+    
+    /**
      * Start Test
      *
      * @return void
@@ -174,16 +228,16 @@ class DynamoDBTestCase extends CakeTestCase {
             $this->DynamoDB =& ConnectionManager::getDataSource($this->Post->useDbConfig);
         }
         
-        // if (!$this->created_test_tables && !empty($this->config['create_test_tables'])) {
-        //     $this->assertTrue($this->_removeTestTables());
-        //     $this->assertTrue($this->_createTestTables());
-        //     $this->created_test_tables = true;
-        // }
-        // 
-        // if (!$this->created_test_data && !empty($this->config['create_test_data'])) {
-        //     $this->assertTrue($this->_createTestData());
-        //     $this->created_test_data = true;
-        // }
+        if (!$this->created_test_tables && $this->create_test_tables) {
+            $this->assertTrue($this->_removeTestTables());
+            $this->assertTrue($this->_createTestTables());
+            $this->created_test_tables = true;
+        }
+        
+        if (!$this->created_test_data && $this->create_test_data) {
+            $this->assertTrue($this->_createTestData());
+            $this->created_test_data = true;
+        }
         
     }
     
@@ -316,17 +370,27 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testQuery() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
         $this->DynamoDB->connected = false;
         $this->assertFalse($this->DynamoDB->query(array()));
         $this->DynamoDB->connected = true;
         
-        $tableName = 'Reply';
+        $tableName = 'testReply';
         $options = array(
             'TableName' => $tableName, 
             'HashKeyValue' => array(AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'),
         );
         $response = $this->DynamoDB->query($options);
-        $this->assertTrue(is_object($response->body->Items));
+        $this->assertEqual($response->status, 200);
+        $result = count($response->body->Items);
+        $this->assertTrue($result>0);
         
     }
     
@@ -336,6 +400,33 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testQuery2() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'TableName' => 'testReply',
+            'HashKeyValue' => array(
+                AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+            ),
+            'AttributesToGet' => array( 'Subject', 'ReplyDateTime', 'PostedBy' ),
+            'ConsistentRead' => true,
+            'RangeKeyCondition' => array(
+                'ComparisonOperator' => AmazonDynamoDB::CONDITION_LESS_THAN_OR_EQUAL,
+                'AttributeValueList' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => $this->seven_days_ago)
+                )
+            )
+        );
+        $response = $this->DynamoDB->query($options);
+        $this->assertEqual($response->status, 200);
+        $result = count($response->body->Items);
+        $this->assertTrue($result>0);
+        
     }
     
     /**
@@ -344,13 +435,48 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testQuery3() {
         
-    }
-    
-    /**
-     * Test query 4
-     *
-     */
-    public function testQuery4() {
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'TableName' => 'testReply',
+            'Limit' => 2,
+            'HashKeyValue' => array(
+                AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2',
+            ),
+            'RangeKeyCondition' => array(
+                'ComparisonOperator' => AmazonDynamoDB::CONDITION_GREATER_THAN_OR_EQUAL,
+                'AttributeValueList' => array(
+                    array( AmazonDynamoDB::TYPE_STRING => $this->fourteen_days_ago )
+                )
+            )
+        );
+        $response = $this->DynamoDB->query($options);
+        $this->assertEqual($response->status, 200);
+        
+        // Do we have more data? Fetch it!
+        if (isset($response->body->LastEvaluatedKey)) {
+            $options = array(
+                'TableName' => 'testReply',
+                'Limit' => 2,
+                'ExclusiveStartKey' => $response->body->LastEvaluatedKey->to_array()->getArrayCopy(),
+                'HashKeyValue' => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2' ),
+                'RangeKeyCondition' => array(
+                    'ComparisonOperator' => AmazonDynamoDB::CONDITION_GREATER_THAN_OR_EQUAL,
+                    'AttributeValueList' => array(
+                        array( AmazonDynamoDB::TYPE_STRING => $this->fourteen_days_ago )
+                    )
+                )
+            );
+            $response2 = $this->DynamoDB->query($options);
+        }
+        $this->assertEqual($response2->status, 200);
+        $this->assertTrue(isset($response2->body->Items));
         
     }
     
@@ -360,6 +486,23 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testScan() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'TableName' => 'testProductCatalog'
+        );
+        $response = $this->DynamoDB->query('scan', array($options));
+        $this->assertEqual($response->status, 200);
+        
+        $result = count($response->body->Items);
+        $this->assertTrue($result>0);
+        
     }
     
     /**
@@ -367,6 +510,27 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testScan2() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'TableName' => 'testProductCatalog'
+        );
+        $response = $this->DynamoDB->query('scan', array($options));
+        $this->assertEqual($response->status, 200);
+        
+        $result = count($response->body->Items);
+        $this->assertTrue($result>0);
+        foreach ($response->body->Items as $item) {
+            $this->assertNotNull((string) $item->Id->{AmazonDynamoDB::TYPE_NUMBER});
+            $this->assertNotNull((string) $item->Title->{AmazonDynamoDB::TYPE_STRING});
+        }
         
     }
     
@@ -376,6 +540,32 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testScan3() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'TableName' => 'testProductCatalog', 
+            'AttributesToGet' => array('Id'),
+            'ScanFilter' => array(
+                'Price' => array(
+                    'ComparisonOperator' => AmazonDynamoDB::CONDITION_LESS_THAN,
+                    'AttributeValueList' => array(
+                        array( AmazonDynamoDB::TYPE_NUMBER => '0' )
+                    )
+                ),
+            )
+        );
+        $response = $this->DynamoDB->query('scan', array($options));
+        $this->assertEqual($response->status, 200);
+        
+        $result = count($response->body->Items);
+        $this->assertTrue($result>0);
+        
     }
     
     /**
@@ -383,6 +573,35 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testScan4() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'TableName' => 'testProductCatalog',
+            'Limit' => 2
+        );
+        $response = $this->DynamoDB->query('scan', array($options));
+        $this->assertEqual($response->status, 200);
+        
+        // Do we have more data? Fetch it!
+        if (isset($response->body->LastEvaluatedKey)) {
+            $options = array(
+                'TableName' => 'testProductCatalog',
+                'Limit' => 2,
+                'ExclusiveStartKey' => $response->body->LastEvaluatedKey->to_array()->getArrayCopy()
+            );
+            $response2 = $this->DynamoDB->query('scan', array($options));
+            $this->assertEqual($response2->status, 200);
+            
+            $result = count($response2->body->Items);
+            $this->assertTrue($result>0);
+        }
         
     }
     
@@ -392,6 +611,52 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testBatchGetItem() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $options = array(
+            'RequestItems' => array(
+                'testForum' => array(
+                    'Keys' => array(
+                        array( // Key #2
+                            'HashKeyElement'  => array(
+                                AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB'
+                            )
+                        )
+                    )
+                ),
+                'testReply' => array(
+                    'Keys' => array(
+                        array( // Key #1
+                            'HashKeyElement'  => array(
+                                AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+                            ),
+                            'RangeKeyElement' => array(
+                                AmazonDynamoDB::TYPE_STRING => $this->seven_days_ago
+                            ),
+                        ),
+                        array( // Key #2
+                            'HashKeyElement'  => array(
+                                AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+                            ),
+                            'RangeKeyElement' => array(
+                                AmazonDynamoDB::TYPE_STRING => $this->twenty_one_days_ago
+                            ),
+                        ),
+                    )
+                )
+            )
+        );
+        $response = $this->DynamoDB->query('batch_get_item', array($options));
+        $this->assertEqual($response->status, 200);
+        $this->assertNotNull($response->body->Responses->testReply);
+        $this->assertNotNull($response->body->Responses->testForum);
+        
     }
     
     /**
@@ -399,6 +664,14 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testBatchGetItemWithOptionalParameters() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
         
     }
     
@@ -408,6 +681,14 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testBatchWriteItem() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
     }
     
     /**
@@ -415,6 +696,14 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testDeleteItem() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
         
     }
     
@@ -424,6 +713,14 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testDeleteItemWithOptionalParameters() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
     }
     
     /**
@@ -431,6 +728,14 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testGetItem() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
         
     }
     
@@ -440,6 +745,14 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testPutItem() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
     }
     
     /**
@@ -447,6 +760,14 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testPutItemWithOptionalParameters() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
         
     }
     
@@ -456,6 +777,14 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testUpdateItem() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
     }
     
     /**
@@ -463,6 +792,14 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testUpdateItemWithOptionalParameters() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
         
     }
     
@@ -472,6 +809,50 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testCreateTable() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $skip = $this->skipIf(
+            $this->skipTestCreateTable,
+            'Test for create_table is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $tableName = uniqid();
+        $options = array(
+            'TableName' => $tableName,
+            'KeySchema' => array(
+                'HashKeyElement' => array(
+                    'AttributeName' => 'Id',
+                    'AttributeType' => AmazonDynamoDB::TYPE_NUMBER
+                )
+            ),
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => 10,
+                'WriteCapacityUnits' => 5
+            )
+        );
+        $response = $this->DynamoDB->query('create_table', array($options));
+        $this->assertEqual($response->status, 200);
+        do {
+            sleep(1);
+            $options = array('TableName' => $tableName);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus !== 'ACTIVE');
+        
+        $response = $this->DynamoDB->query('list_tables');
+        $result = $response->body->TableNames()->map_string();
+        
+        $this->assertTrue(in_array($tableName, $result));
+        
     }
     
     /**
@@ -479,6 +860,144 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testDeleteTable() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $skip = $this->skipIf(
+            $this->skipTestDeleteTable,
+            'Test for delete_table is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $tableName = uniqid();
+        $options = array(
+            'TableName' => $tableName,
+            'KeySchema' => array(
+                'HashKeyElement' => array(
+                    'AttributeName' => 'Id',
+                    'AttributeType' => AmazonDynamoDB::TYPE_NUMBER
+                )
+            ),
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => 10,
+                'WriteCapacityUnits' => 5
+            )
+        );
+        $response = $this->DynamoDB->query('create_table', array($options));
+        $this->assertEqual($response->status, 200);
+        do {
+            sleep(1);
+            $options = array('TableName' => $tableName);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus !== 'ACTIVE');
+        
+        $options = array(
+            'TableName' => $tableName
+        );
+        $response = $this->DynamoDB->query('delete_table', array($options));
+        do {
+            sleep(1);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus == 'DELETING');
+        
+        $response = $this->DynamoDB->query('list_tables');
+        $result = $response->body->TableNames()->map_string();
+        
+        $this->assertFalse(in_array($tableName, $result));
+        
+    }
+    
+    /**
+     * Test describe_table
+     *
+     */
+    public function testDescribeTable() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $tableName = 'testProductCatalog';
+        $options = array(
+            'TableName' => $tableName
+        );
+        $response = $this->DynamoDB->query('describe_table', array($options));
+        $this->assertNotNull($response->body->Table->TableStatus);
+        
+    }
+    
+    /**
+     * Test update_table
+     *
+     */
+    public function testUpdateTable() {
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $skip = $this->skipIf(
+            $this->skipTestUpdateTable,
+            'Test for update_table is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $tableName = 'testProductCatalog';
+        $readCapacityUnits = 2;
+        $options = array(
+            'TableName' => $tableName,
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => $readCapacityUnits,
+                'WriteCapacityUnits' => 5 
+            )
+        );
+        do {
+            sleep(1);
+            $options = array('TableName' => $tableName);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus == 'UPDATING');
+        
+        $this->assertEqual(
+            (string)$response->body->Table->ProvisionedThroughput->ReadCapacityUnits,
+            10
+        );
+        
+        $readCapacityUnits = -2;
+        $options = array(
+            'TableName' => $tableName,
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => $readCapacityUnits,
+                'WriteCapacityUnits' => 5 
+            )
+        );
+        $this->assertEqual($response->status, 200);
+        do {
+            sleep(1);
+            $options = array('TableName' => $tableName);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus == 'UPDATING');
         
     }
     
@@ -488,6 +1007,18 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testListTables() {
         
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $response = $this->DynamoDB->query('list_tables');
+        $result = is_array($response->body->TableNames()->map_string());
+        $this->assertTrue($result);
+        
     }
     
     /**
@@ -495,7 +1026,27 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      */
     public function testListTables2() {
-    
+        
+        $skip = $this->skipIf(
+            $this->skipTestAmazonDynamodbAPI,
+            'Test Amazon DynamoDB API is disabled'
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $tables = array();
+        do {
+            $response = $this->DynamoDB->query('list_tables', array(array(
+                'Limit' => 2, 
+                'ExclusiveStartTableName' => isset($response) ? (string) $response->body->LastEvaluatedTableName : null
+            )));
+            $tables = array_merge($tables, $response->body->TableNames()->map_string());
+        }
+        while ($response->body->LastEvaluatedTableName);
+        
+        $this->assertEqual($response->status, 200);
+        
     }
     
     /**
