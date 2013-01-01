@@ -623,17 +623,17 @@ class DynamodbSource extends DataSource {
      * @since 0.1
      */
     public function _setBinaryPrimaryKey(&$model, $name = null, $data = array()) {
-        if (empty($data[$name])) {
+        if (!empty($data[$name])) {
             return array(
-                AmazonDynamoDB::TYPE_BINARY => pack($data[$key])
+                AmazonDynamoDB::TYPE_BINARY => $data[$name]
             );
         } elseif (!empty($data[$model->alias.'.'.$name])) {
             return array(
-                AmazonDynamoDB::TYPE_BINARY => pack($data[$model->alias.'.'.$name])
+                AmazonDynamoDB::TYPE_BINARY => $data[$model->alias.'.'.$name]
             );
         } else {
             return array(
-                AmazonDynamoDB::TYPE_BINARY => pack(String::uuid())
+                AmazonDynamoDB::TYPE_BINARY => String::uuid()
             );
         }
     }
@@ -712,14 +712,11 @@ class DynamodbSource extends DataSource {
             case 'object':
                 trigger_error('var type (object) not supported');
                 break;
-            case 'resource':
-                trigger_error('var type (resource) not supported');
-                break;
             case 'NULL':
                 $value = array(AmazonDynamoDB::TYPE_STRING => '');
                 break;
             default:
-                $value = array(AmazonDynamoDB::TYPE_STRING => '');
+                trigger_error('var type not supported');
         }
         return $value;
     }
