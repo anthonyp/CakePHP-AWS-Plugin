@@ -264,9 +264,10 @@ class DynamodbSource extends DataSource {
             return false;
         }
         if (!empty($query['conditions'])) {
-            $key = $query['conditions'][$model->alias .'.'. $model->primaryKey];
-            if (empty($key)) {
+            if (empty($query['conditions'][$model->alias .'.'. $model->primaryKey])) {
                 $key = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
+            } else {
+                $key = $key = $query['conditions'][$model->alias .'.'. $model->primaryKey];
             }
             $options = array(
                 'TableName' => $model->table,
@@ -275,7 +276,10 @@ class DynamodbSource extends DataSource {
             $response = $this->connection->get_item($options);
             $results = $this->_parseItem($model, $response);
         } else {
-            $response = $this->connection->scan($params);
+            $options = array(
+                'TableName' => $model->table
+            );
+            $response = $this->connection->scan($options);
             $results = $this->_parseItems($model, $response);
         }
         if ($model->findQueryType == 'count') {
@@ -489,6 +493,9 @@ class DynamodbSource extends DataSource {
     public function _getPrimaryKeyValue($value = null) {
         if (!$value) {
             return false;
+        }
+        if (!is_array($value)) {
+            return $value;
         }
         $keys = array_keys($value);
         return $value[$keys[0]];
