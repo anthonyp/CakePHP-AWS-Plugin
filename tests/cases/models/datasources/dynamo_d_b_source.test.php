@@ -429,93 +429,93 @@ class DynamoDBTestCase extends CakeTestCase {
         
     }
     
-    public function testFindFirst() {
-        
-        $result = $this->Post->find('first', array());
-        
-    }
-    
-    public function testFindCount() {
-        
-        $result = $this->Post->find('count', array());
-        
-    }
-    
-    public function testFindAll() {
-        
-        $result = $this->Post->find('all', array());
-        
-    }
-    
-    public function testFindList() {
-        
-        $result = $this->Post->find('list', array());
-        
-    }
-    
-    public function testFindThreaded() {
-        
-        $result = $this->Post->find('threaded', array());
-        
-    }
-    
-    public function testFindNeighbors() {
-        
-        $result = $this->Post->find('neighbors', array());
-        
-    }
-    
-    public function testFindAllBy() {
-        
-        $result = $this->Post->findAllByTitle('first');
-        
-    }
-    
-    public function testFindBy() {
-        
-        $result = $this->Post->findByTitle('first');
-        
-    }
-    
-    public function testFindFields() {
-        
-    }
-    
-    public function testFindLimit() {
-        
-    }
-    
-    public function testFindOrder() {
-        
-    }
-    
-    public function testFindConditions() {
-        
-    }
-    
-    public function testFindRecursive() {
-        
-    }
-    
-    public function testField() {
-        
-    }
-    
-    public function testSaveAll() {
-        
-    }
-    
-    public function testUpdateAll() {
-        
-    }
-    
-    public function testDeleteAll() {
-        
-    }
-    
-    public function testCounterCache() {
-        
-    }
+    // public function testFindFirst() {
+    //     
+    //     $result = $this->Post->find('first', array());
+    //     
+    // }
+    // 
+    // public function testFindCount() {
+    //     
+    //     $result = $this->Post->find('count', array());
+    //     
+    // }
+    // 
+    // public function testFindAll() {
+    //     
+    //     $result = $this->Post->find('all', array());
+    //     
+    // }
+    // 
+    // public function testFindList() {
+    //     
+    //     $result = $this->Post->find('list', array());
+    //     
+    // }
+    // 
+    // public function testFindThreaded() {
+    //     
+    //     $result = $this->Post->find('threaded', array());
+    //     
+    // }
+    // 
+    // public function testFindNeighbors() {
+    //     
+    //     $result = $this->Post->find('neighbors', array());
+    //     
+    // }
+    // 
+    // public function testFindAllBy() {
+    //     
+    //     $result = $this->Post->findAllByTitle('first');
+    //     
+    // }
+    // 
+    // public function testFindBy() {
+    //     
+    //     $result = $this->Post->findByTitle('first');
+    //     
+    // }
+    // 
+    // public function testFindFields() {
+    //     
+    // }
+    // 
+    // public function testFindLimit() {
+    //     
+    // }
+    // 
+    // public function testFindOrder() {
+    //     
+    // }
+    // 
+    // public function testFindConditions() {
+    //     
+    // }
+    // 
+    // public function testFindRecursive() {
+    //     
+    // }
+    // 
+    // public function testField() {
+    //     
+    // }
+    // 
+    // public function testSaveAll() {
+    //     
+    // }
+    // 
+    // public function testUpdateAll() {
+    //     
+    // }
+    // 
+    // public function testDeleteAll() {
+    //     
+    // }
+    // 
+    // public function testCounterCache() {
+    //     
+    // }
     
     /**
      * Test query

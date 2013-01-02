@@ -91,7 +91,6 @@ class DynamodbSource extends DataSource {
      *
      * @param array $config Configuration settings.
      * @return boolean Success.
-     * @author Everton Yoshitani <everton@notreve.com>
      * @since 0.1
      */
     public function setConfig($config = array()) {
@@ -263,11 +262,12 @@ class DynamodbSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
+        
         if (!empty($query['conditions'])) {
             if (empty($query['conditions'][$model->alias .'.'. $model->primaryKey])) {
                 $key = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
             } else {
-                $key = $key = $query['conditions'][$model->alias .'.'. $model->primaryKey];
+                $key = $query['conditions'][$model->alias .'.'. $model->primaryKey];
             }
             $options = array(
                 'TableName' => $model->table,
@@ -335,7 +335,6 @@ class DynamodbSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
-        
         $options = array(
             'TableName' => $model->table,
             'Key' => $this->_setPrimaryKey($model, $conditions)
@@ -364,6 +363,30 @@ class DynamodbSource extends DataSource {
             return call_user_func(array($this->connection, $args[0]), $options);
         }
         return $this->connection->query($args[0]);
+    }
+    
+    public function _findFirst(&$model, $query = array()) {
+        debug(__FUNCTION__);
+    }
+    
+    public function _findCount(&$model, $query = array()) {
+        debug(__FUNCTION__);
+    }
+    
+    public function _findAll(&$model, $query = array()) {
+        debug(__FUNCTION__);
+    }
+    
+    public function _findList(&$model, $query = array()) {
+        debug(__FUNCTION__);
+    }
+    
+    public function _findThreaded(&$model, $query = array()) {
+        debug(__FUNCTION__);
+    }
+    
+    public function _findNeighbors(&$model, $query = array()) {
+        debug(__FUNCTION__);
     }
     
     /**
