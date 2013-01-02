@@ -295,27 +295,23 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertFalse($this->DynamoDB->create($this->Post, array(), array()));
         $this->DynamoDB->connected = true;
         
-        // $this->assertFalse(
-        //     $this->DynamoDB->create($this->Post, array(), array())
-        // );
-        
-        $fields = array(
-            'id',
-            'rev',
-            'title',
-            'description'
+        $postId = uniqid();
+        $postTitle = 'Post #'. $postId;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => rand(1,9),
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
         );
+        $this->assertTrue($this->Post->save($data));
         
-        $post = 'Post #'. rand();
-        $values = array(
-            uniqid(),
-            rand(1,9),
-            $post,
-            'Description for '. $post
+        $result = $this->Post->read(null, $postId);
+        $this->assertEqual(
+            $result['Post']['title'],
+            $postTitle
         );
-        
-        $result = $this->DynamoDB->create($this->Post, $fields, $values);
-        $this->assertTrue($result);
         
     }
     
@@ -325,35 +321,46 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testRead() {
          
-        $fields = array(
-            'id',
-            'rev',
-            'title',
-            'description'
+        $this->DynamoDB->connected = false;
+        $this->assertFalse(
+            $this->DynamoDB->read($this->Post, array())
         );
-         
-        $post = 'Post #'. rand();
-        $values = array(
-            uniqid(),
-            rand(1,9),
-            $post,
-            'Description for '. $post
-        );
-        $data = array_combine($fields, $values);
-        $result = $this->DynamoDB->create($this->Post, $fields, $values);
-         
-        $this->assertTrue($result);
-         
-        $id = $this->Post->getLastInsertId();
-         
-        $query = array(
-            'conditions' => array(
-                'Post.id' => $id
+        $this->DynamoDB->connected = true;
+        
+        $postId = uniqid();
+        $postTitle = 'Post #'. $postId;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => rand(1,9),
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
             )
         );
+        $this->assertTrue($this->Post->save($data));
+        
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'title' => $postTitle .' (updated)',
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->read(null, $postId);
+        $this->assertEqual(
+            $result['Post']['title'],
+            $postTitle .' (updated)'
+        );
+        
+        $this->Post->id = $postId;
+        $result = $this->DynamoDB->read($this->Post);
+        $this->assertNotNull($result);
+        
+        $query = array('conditions'=>array('id'=>$postId));
         $result = $this->DynamoDB->read($this->Post, $query);
-        $this->assertEqual($data, $result[0]['Post']);
-         
+        $this->assertNotNull($result);
+        
     }
     
     /**
@@ -1726,6 +1733,11 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertFalse($this->DynamoDB->_getPrimaryKeyValue());
         
         $value = array('N'=>100);
+        $expected = 100;
+        $result = $this->DynamoDB->_getPrimaryKeyValue($value);
+        $this->assertEqual($result, $expected);
+        
+        $value = 100;
         $expected = 100;
         $result = $this->DynamoDB->_getPrimaryKeyValue($value);
         $this->assertEqual($result, $expected);
