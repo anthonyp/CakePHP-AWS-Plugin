@@ -226,7 +226,7 @@ class DynamodbSource extends DataSource {
         if ($fields !== null && $values !== null) {
             $data = array_combine($fields, $values);
         } else {
-            $data = $Model->data;
+            $data = $model->data;
         }
         $data = $this->_setVarTypes($data);
         if (empty($data[$model->primaryKey])) {
@@ -289,6 +289,7 @@ class DynamodbSource extends DataSource {
      *
      * Update record from the database.
      *
+     * @todo add $conditions
      * @param object $model Model object that the record is for.
      * @param array $fields An array of field names to update. If null, 
      *        $model->data will be used to generate field names.
@@ -303,10 +304,10 @@ class DynamodbSource extends DataSource {
         }
         if ($fields !== null && $values !== null) {
             $data = array_combine($fields, $values);
-        } elseif($fields !== null && $conditions !== null) {
+        } elseif ($fields !== null && $conditions !== null) {
             trigger_error('updateAll not supported');
-        } else{
-            $data = $Model->data;
+        } else {
+            $data = $model->data;
         }
         $options = array(
             'TableName' => $model->table,
@@ -330,6 +331,7 @@ class DynamodbSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
+        
         $options = array(
             'TableName' => $model->table,
             'Key' => $this->_setPrimaryKey($model, $conditions)
