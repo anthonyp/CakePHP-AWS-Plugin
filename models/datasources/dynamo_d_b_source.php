@@ -18,7 +18,7 @@
  * @link        http://github.com/anthonyp/CakePHP-AWS-Plugin
  */
  
-class DynamodbSource extends DataSource {
+class DynamoDBSource extends DataSource {
     
     /**
      * The description of this data source
@@ -185,18 +185,32 @@ class DynamodbSource extends DataSource {
     /**
      * Return an array of the fields in given table name
      *
-     * @todo Support Hash and Range primary keys.
      * @param object $model Model object of the database table to inspect.
      * @return array Fields in table. Keys are name and type.
      * @since 0.1
      */
     public function describe(&$model) {
-        $primaryKey = $this->_getPrimaryKey($model);
-        if ($primaryKey['type'] == 'hashAndRange') {
-            trigger_error('Hash and Range primary key not support');
-        } else {
-            $model->primaryKey = $primaryKey['keys']['hash'];
+        if (!$this->connected) {
+            return false;
         }
+        $options = array(
+            'TableName' => $model->table
+        );
+        $response = $this->_parseTable(
+            $model,
+            $this->connection->describe_table($options)
+        );
+        
+        $model->primaryKeySchema = $response['KeySchema'];
+        
+        if (array_keys($response['KeySchema']) == array('HashKeyElement', 'RangeKeyElement')) {
+            $model->primaryKeyType = 'hashAndRange';
+        } else {
+            $model->primaryKeyType = 'hash';
+        }
+        
+        $model->primaryKey = $response['KeySchema']['HashKeyElement']['AttributeName'];
+        
         return $model->schema;
     }
     
@@ -229,7 +243,7 @@ class DynamodbSource extends DataSource {
         }
         $data = $this->_setVarTypes($data);
         if (empty($data[$model->primaryKey])) {
-            $data[$model->primaryKey] = array_shift($this->_setPrimaryKey($model));
+            $data[$model->primaryKey] = array_shift($this->_setHashPrimaryKey($model));
         }
         $options = array(
             'TableName' => $model->table,
@@ -288,12 +302,15 @@ class DynamodbSource extends DataSource {
         return $results;
     }
     
+    
     /**
      * The "U" in CRUD
      *
      * Update record from the database.
      *
-     * @todo add $conditions
+     * @todo add support for $conditions.
+     * @todo add support for updateAll.
+     * @todo add support for update actions: ADD, PUT and DELETE. 
      * @param object $model Model object that the record is for.
      * @param array $fields An array of field names to update. If null, 
      *        $model->data will be used to generate field names.
@@ -308,14 +325,12 @@ class DynamodbSource extends DataSource {
         }
         if ($fields !== null && $values !== null) {
             $data = array_combine($fields, $values);
-        } elseif ($fields !== null && $conditions !== null) {
-            trigger_error('updateAll not supported');
         } else {
             $data = $model->data;
         }
         $options = array(
             'TableName' => $model->table,
-            'Key' => $this->_setPrimaryKey($model, $data),
+            'Key' => $this->_setHashPrimaryKey($model, $data),
             'AttributeUpdates' => $this->_setAttributeUpdates($model, $data)
         );
         return $this->connection->update_item($options);
@@ -337,7 +352,7 @@ class DynamodbSource extends DataSource {
         }
         $options = array(
             'TableName' => $model->table,
-            'Key' => $this->_setPrimaryKey($model, $conditions)
+            'Key' => $this->_setHashPrimaryKey($model, $conditions)
         );
         return $this->connection->delete_item($options);
     }
@@ -363,30 +378,6 @@ class DynamodbSource extends DataSource {
             return call_user_func(array($this->connection, $args[0]), $options);
         }
         return $this->connection->query($args[0]);
-    }
-    
-    public function _findFirst(&$model, $query = array()) {
-        debug(__FUNCTION__);
-    }
-    
-    public function _findCount(&$model, $query = array()) {
-        debug(__FUNCTION__);
-    }
-    
-    public function _findAll(&$model, $query = array()) {
-        debug(__FUNCTION__);
-    }
-    
-    public function _findList(&$model, $query = array()) {
-        debug(__FUNCTION__);
-    }
-    
-    public function _findThreaded(&$model, $query = array()) {
-        debug(__FUNCTION__);
-    }
-    
-    public function _findNeighbors(&$model, $query = array()) {
-        debug(__FUNCTION__);
     }
     
     /**
@@ -471,42 +462,6 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * Returns the primary key type and key names of table
-     *
-     * @param object $model Model object.
-     * @return array Primary key array with type and keys.
-     * @since 0.1
-     */
-    public function _getPrimaryKey(&$model = null) {
-        if (!$this->connected) {
-            return false;
-        }
-        $type = null;
-        $keys = array();
-        $options = array(
-            'TableName' => $model->table
-        );
-        $response = $this->_parseTable(
-            $model,
-            $this->connection->describe_table($options)
-        );
-        $composite = array('HashKeyElement', 'RangeKeyElement');
-        if (array_keys($response['KeySchema']) == $composite) {
-            $type = 'hashAndRange';
-            $keys = array(
-                'hash' => $response['KeySchema']['HashKeyElement']['AttributeName'],
-                'range' => $response['KeySchema']['RangeKeyElement']['AttributeName']
-            );
-        } else {
-            $type = 'hash';
-            $keys = array(
-                'hash' => $response['KeySchema']['HashKeyElement']['AttributeName']
-            );
-        }
-        return compact('type', 'keys');
-    }
-    
-    /**
      * Returns the primary key value
      *
      * @param mixed $value Value data.
@@ -525,62 +480,30 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * Returns the primary key array with type as key and value
+     * Returns the Hash Primary Key array
      *
      * @param object $model Model object.
      * @param array $data Data array.
      * @return array Primary key array with type as key and value.
      * @since 0.1
      */
-    public function _setPrimaryKey(&$model, $data = array()) {
-        if (!$this->connected) {
-            return false;
-        }
+    public function _setHashPrimaryKey(&$model, $data = array()) {
         $primaryKey = array();
-        $type = null;
-        $options = array(
-            'TableName' => $model->table
-        );
-        $response = $this->_parseTable(
-            $model,
-            $this->connection->describe_table($options)
-        );
-        
-        if (!empty($response['KeySchema']['HashKeyElement'])) {
-            $name = $response['KeySchema']['HashKeyElement']['AttributeName'];
-            switch($response['KeySchema']['HashKeyElement']['AttributeType']) {
+        if (!empty($model->primaryKeySchema['HashKeyElement'])) {
+            $name = $model->primaryKeySchema['HashKeyElement']['AttributeName'];
+            switch($model->primaryKeySchema['HashKeyElement']['AttributeType']) {
                 case 'S':
-                    $primaryKey['HashKeyElement'] = $this->_setStringPrimaryKey(
+                    $primaryKey['HashKeyElement'] = $this->_setStringPrimaryKeyValue(
                         $model, $name, $data
                     );
                     break;
                 case 'N':
-                    $primaryKey['HashKeyElement'] = $this->_setNumberPrimaryKey(
+                    $primaryKey['HashKeyElement'] = $this->_setNumberPrimaryKeyValue(
                         $model, $name, $data
                     );
                     break;
                 case 'B':
-                    $primaryKey['HashKeyElement'] = $this->_setBinaryPrimaryKey(
-                        $model, $name, $data
-                    );
-                    break;
-            }
-        }
-        if (!empty($response['KeySchema']['RangeKeyElement'])) {
-            $name = $response['KeySchema']['RangeKeyElement']['AttributeName'];
-            switch($response['KeySchema']['RangeKeyElement']['AttributeType']) {
-                case 'S':
-                    $primaryKey['RangeKeyElement'] = $this->_setStringPrimaryKey(
-                        $model, $name, $data
-                    );
-                    break;
-                case 'N':
-                    $primaryKey['RangeKeyElement'] = $this->_setNumberPrimaryKey(
-                        $model, $name, $data
-                    );
-                    break;
-                case 'B':
-                    $primaryKey['RangeKeyElement'] = $this->_setBinaryPrimaryKey(
+                    $primaryKey['HashKeyElement'] = $this->_setBinaryPrimaryKeyValue(
                         $model, $name, $data
                     );
                     break;
@@ -590,7 +513,40 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * Set a String primary key
+     * Returns the Range Primary Key array
+     *
+     * @param object $model Model object.
+     * @param array $data Data array.
+     * @return array Primary key array with type as key and value.
+     * @since 0.1
+     */
+    public function _setRangePrimaryKey(&$model, $data = array()) {
+        $primaryKey = array();
+        if (!empty($model->primaryKeySchema['RangeKeyElement'])) {
+            $name = $model->primaryKeySchema['RangeKeyElement']['AttributeName'];
+            switch($model->primaryKeySchema['RangeKeyElement']['AttributeType']) {
+                case 'S':
+                    $primaryKey['RangeKeyElement'] = $this->_setStringPrimaryKeyValue(
+                        $model, $name, $data
+                    );
+                    break;
+                case 'N':
+                    $primaryKey['RangeKeyElement'] = $this->_setNumberPrimaryKeyValue(
+                        $model, $name, $data
+                    );
+                    break;
+                case 'B':
+                    $primaryKey['RangeKeyElement'] = $this->_setBinaryPrimaryKeyValue(
+                        $model, $name, $data
+                    );
+                    break;
+            }
+        }
+        return $primaryKey;
+    }
+    
+    /**
+     * Set a String primary key value
      *
      * Set with the current data array or create.
      *
@@ -600,7 +556,7 @@ class DynamodbSource extends DataSource {
      * @return array An array with key/value.
      * @since 0.1
      */
-    public function _setStringPrimaryKey(&$model, $name = null, $data = array()) {
+    public function _setStringPrimaryKeyValue(&$model, $name = null, $data = array()) {
         if (!empty($data[$name])) {
             return array(
                 AmazonDynamoDB::TYPE_STRING => $data[$name]
@@ -617,7 +573,7 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * Set a Number primary key
+     * Set a Number primary key value
      *
      * Set with the current data array or create.
      *
@@ -627,7 +583,7 @@ class DynamodbSource extends DataSource {
      * @return array An array with key/value.
      * @since 0.1
      */
-    public function _setNumberPrimaryKey(&$model, $name = null, $data = array()) {
+    public function _setNumberPrimaryKeyValue(&$model, $name = null, $data = array()) {
         if (!empty($data[$name])) {
             return array(
                 AmazonDynamoDB::TYPE_NUMBER => $data[$name]
@@ -644,7 +600,7 @@ class DynamodbSource extends DataSource {
     }
     
     /**
-     * Set a Binary primary key
+     * Set a Binary primary key value
      *
      * Set with the current data array or create.
      *
@@ -654,7 +610,7 @@ class DynamodbSource extends DataSource {
      * @return array An array with key/value.
      * @since 0.1
      */
-    public function _setBinaryPrimaryKey(&$model, $name = null, $data = array()) {
+    public function _setBinaryPrimaryKeyValue(&$model, $name = null, $data = array()) {
         if (!empty($data[$name])) {
             return array(
                 AmazonDynamoDB::TYPE_BINARY => $data[$name]

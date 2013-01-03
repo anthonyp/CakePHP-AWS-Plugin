@@ -283,6 +283,10 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testDescribe() {
         
+        $this->DynamoDB->connected = false;
+        $this->assertFalse($this->DynamoDB->describe($this->Post));
+        $this->DynamoDB->connected = true;
+        
     }
     
     /**
@@ -453,18 +457,6 @@ class DynamoDBTestCase extends CakeTestCase {
     //     
     // }
     // 
-    // public function testFindThreaded() {
-    //     
-    //     $result = $this->Post->find('threaded', array());
-    //     
-    // }
-    // 
-    // public function testFindNeighbors() {
-    //     
-    //     $result = $this->Post->find('neighbors', array());
-    //     
-    // }
-    // 
     // public function testFindAllBy() {
     //     
     //     $result = $this->Post->findAllByTitle('first');
@@ -500,7 +492,11 @@ class DynamoDBTestCase extends CakeTestCase {
     // public function testField() {
     //     
     // }
-    // 
+    
+    /**
+     * CakePHP ATOM operations
+     *
+     */
     // public function testSaveAll() {
     //     
     // }
@@ -514,6 +510,98 @@ class DynamoDBTestCase extends CakeTestCase {
     // }
     // 
     // public function testCounterCache() {
+    //     
+    // }
+    
+    /**
+     * Find conditions
+     *
+     */
+    public function testFindEqual() {
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title !=' => 'The super story'
+            )
+        ));
+        
+        debug($result);
+        
+    }
+    
+    public function testFindNotEqual() {
+        $this->Post->find('all', array('conditions'=>array('Post.id'=>1), 'a'=>array('key1'=>1), array('key2'=>2), array('key3'=>3)));
+    }
+    
+    public function testFindLessThan() {
+        
+    }
+    
+    public function testFindLessThanOrEqualTo() {
+        
+    }
+    
+    public function testFindGreaterThan() {
+        
+    }
+    
+    public function testFindNull() {
+        
+    }
+    
+    public function testFindNotNull() {
+        
+    }
+    
+    public function testFindDoesntContain() {
+        
+    }
+    
+    public function testFindIn() {
+        
+    }
+    
+    public function testFindBetween() {
+        
+    }
+    
+    public function testFindBeginsWith() {
+        
+    }
+    
+    /**
+     * Save with optional return option
+     *
+     */
+    // public function testSaveWithActionAdd() {
+    //     
+    // }
+    // 
+    // public function testSaveWithActionDelete() {
+    //     
+    // }
+    // 
+    // public function testSaveWithActionPut() {
+    //     
+    // }
+    
+    // public function testReadReturnNone() {
+    //     
+    // }
+    // 
+    // public function testReadReturnAllOld() {
+    //     
+    // }
+    // 
+    // public function testReadReturnAllNew() {
+    //     
+    // }
+    // 
+    // public function testReadReturnUpdatedOld() {
+    //     
+    // }
+    // 
+    // public function testReadReturnUpdatedNew() {
     //     
     // }
     
@@ -1780,39 +1868,6 @@ class DynamoDBTestCase extends CakeTestCase {
     }
     
     /**
-     * Test _getPrimaryKey
-     *
-     */
-    public function testGetPrimaryKey() {
-        
-        $this->DynamoDB->connected = false;
-        $this->assertFalse($this->DynamoDB->_getPrimaryKey($this->Post));
-        $this->DynamoDB->connected = true;
-        
-        
-        $this->Post->table = 'testProductCatalog';
-        $expected = array(
-            'type' => 'hash',
-            'keys' => array(
-                'hash' => 'Id'
-            )
-        );
-        $result = $this->DynamoDB->_getPrimaryKey($this->Post);
-        $this->assertEqual($result, $expected);
-        
-        $this->Post->table = 'testReply';
-        $expected = array(
-            'type' => 'hashAndRange',
-            'keys' => array(
-                'hash' => 'Id',
-                'range' => 'ReplyDateTime'
-            )
-        );
-        $result = $this->DynamoDB->_getPrimaryKey($this->Post);
-        $this->assertEqual($result, $expected);
-    }
-    
-    /**
      * Test _getPrimaryKeyValue
      *
      */
@@ -1832,15 +1887,41 @@ class DynamoDBTestCase extends CakeTestCase {
         
     }
     
-    /**
-     * Test _setPrimaryKey
-     *
-     */
-    public function testSetPrimaryKey() {
-        
-        $this->DynamoDB->connected = false;
-        $this->assertFalse($this->DynamoDB->_setPrimaryKey($this->Post, array()));
-        $this->DynamoDB->connected = true;
+    // /**
+    //  * Test _setPrimaryKey
+    //  *
+    //  */
+    // public function testSetPrimaryKey() {
+    //     
+    //     $this->DynamoDB->connected = false;
+    //     $this->assertFalse($this->DynamoDB->_setPrimaryKey($this->Post, array()));
+    //     $this->DynamoDB->connected = true;
+    //     
+    //     
+    //     $data = array(
+    //         'id'    => 100,
+    //         'rev'   => 2,
+    //         'title' => 'The super story',
+    //         'text'  => 'The super story is a test'
+    //     );
+    //     
+    //     $this->Post->primaryKeySchema = array(
+    //         'HashKeyElement' => array(
+    //             'AttributeName' => 'id',
+    //             'AttributeType' => 'S'
+    //         )
+    //     );
+    //     $expected = array(
+    //         'HashKeyElement' => array(
+    //             AmazonDynamoDB::TYPE_STRING => (string)$data['id']
+    //         )
+    //     );
+    //     $result = $this->DynamoDB->_setPrimaryKey($this->Post, $data);
+    //     $this->assertEqual($result, $expected);
+    // 
+    // }
+    
+    public function testSetHashPrimaryKey() {
         
         $data = array(
             'id'    => 100,
@@ -1848,18 +1929,106 @@ class DynamoDBTestCase extends CakeTestCase {
             'title' => 'The super story',
             'text'  => 'The super story is a test'
         );
+        
+        $this->Post->primaryKeySchema = array(
+            'HashKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => 'S'
+            )
+        );
         $expected = array(
             'HashKeyElement' => array(
                 AmazonDynamoDB::TYPE_STRING => (string)$data['id']
             )
         );
-        $result = $this->DynamoDB->_setPrimaryKey($this->Post, $data);
+        $result = $this->DynamoDB->_setHashPrimaryKey($this->Post, $data);
         $this->assertEqual($result, $expected);
+        
+        $this->Post->primaryKeySchema = array(
+            'HashKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => 'N'
+            )
+        );
+        $expected = array(
+            'HashKeyElement' => array(
+                AmazonDynamoDB::TYPE_NUMBER => (string)$data['id']
+            )
+        );
+        $result = $this->DynamoDB->_setHashPrimaryKey($this->Post, $data);
+        $this->assertEqual($result, $expected);
+        
+        $this->Post->primaryKeySchema = array(
+            'HashKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => 'B'
+            )
+        );
+        $expected = array(
+            'HashKeyElement' => array(
+                AmazonDynamoDB::TYPE_BINARY => (string)$data['id']
+            )
+        );
+        $result = $this->DynamoDB->_setHashPrimaryKey($this->Post, $data);
+        $this->assertEqual($result, $expected);
+        
+    }
     
+    public function testSetRangePrimaryKey() {
+        
+        $data = array(
+            'id'    => 100,
+            'rev'   => 2,
+            'title' => 'The super story',
+            'text'  => 'The super story is a test'
+        );
+        
+        $this->Post->primaryKeySchema = array(
+            'RangeKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => 'S'
+            )
+        );
+        $expected = array(
+            'RangeKeyElement' => array(
+                AmazonDynamoDB::TYPE_STRING => (string)$data['id']
+            )
+        );
+        $result = $this->DynamoDB->_setRangePrimaryKey($this->Post, $data);
+        $this->assertEqual($result, $expected);
+        
+        $this->Post->primaryKeySchema = array(
+            'RangeKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => 'N'
+            )
+        );
+        $expected = array(
+            'RangeKeyElement' => array(
+                AmazonDynamoDB::TYPE_NUMBER => (string)$data['id']
+            )
+        );
+        $result = $this->DynamoDB->_setRangePrimaryKey($this->Post, $data);
+        $this->assertEqual($result, $expected);
+        
+        $this->Post->primaryKeySchema = array(
+            'RangeKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => 'B'
+            )
+        );
+        $expected = array(
+            'RangeKeyElement' => array(
+                AmazonDynamoDB::TYPE_BINARY => (string)$data['id']
+            )
+        );
+        $result = $this->DynamoDB->_setRangePrimaryKey($this->Post, $data);
+        $this->assertEqual($result, $expected);
+        
     }
     
     /**
-     * Test _setStringPrimaryKey
+     * Test _setStringPrimaryKeyValue
      *
      */
     public function testSetStringPrimaryKey() {
@@ -1868,7 +2037,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'id' => '550e8400-e29b-41d4-a716-446655440000',
         );
         $expected = array(AmazonDynamoDB::TYPE_STRING => $data['id']);
-        $result = $this->DynamoDB->_setStringPrimaryKey(
+        $result = $this->DynamoDB->_setStringPrimaryKeyValue(
             $this->Post,
             'id',
             $data
@@ -1879,7 +2048,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'Post.id' => '550e8400-e29b-41d4-a716-446655440000',
         );
         $expected = array(AmazonDynamoDB::TYPE_STRING => $data['Post.id']);
-        $result = $this->DynamoDB->_setStringPrimaryKey(
+        $result = $this->DynamoDB->_setStringPrimaryKeyValue(
             $this->Post,
             'id',
             $data
@@ -1891,13 +2060,13 @@ class DynamoDBTestCase extends CakeTestCase {
             'title' => 'The super story',
             'text'  => 'The super story is a test'
         );
-        $result = $this->DynamoDB->_setStringPrimaryKey($this->Post, 'id', $data);
+        $result = $this->DynamoDB->_setStringPrimaryKeyValue($this->Post, 'id', $data);
         $this->assertNotNull($result[AmazonDynamoDB::TYPE_STRING]);
         
     }
     
     /**
-     * Test _setNumberPrimaryKey
+     * Test _setNumberPrimaryKeyValue
      *
      */
     public function testSetNumberPrimaryKey() {
@@ -1906,7 +2075,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'id' => 100,
         );
         $expected = array(AmazonDynamoDB::TYPE_NUMBER => $data['id']);
-        $result = $this->DynamoDB->_setNumberPrimaryKey(
+        $result = $this->DynamoDB->_setNumberPrimaryKeyValue(
             $this->Post,
             'id',
             $data
@@ -1917,7 +2086,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'Post.id' => 100,
         );
         $expected = array(AmazonDynamoDB::TYPE_NUMBER => $data['Post.id']);
-        $result = $this->DynamoDB->_setNumberPrimaryKey(
+        $result = $this->DynamoDB->_setNumberPrimaryKeyValue(
             $this->Post,
             'id',
             $data
@@ -1929,13 +2098,13 @@ class DynamoDBTestCase extends CakeTestCase {
             'title' => 'The super story',
             'text'  => 'The super story is a test'
         );
-        $result = $this->DynamoDB->_setNumberPrimaryKey($this->Post, 'id', $data);
+        $result = $this->DynamoDB->_setNumberPrimaryKeyValue($this->Post, 'id', $data);
         $this->assertNotNull($result[AmazonDynamoDB::TYPE_NUMBER]);
         
     }
     
     /**
-     * Test _setBinaryPrimaryKey
+     * Test _setBinaryPrimaryKeyValue
      *
      */
     public function testSetBinaryPrimaryKey() {
@@ -1944,7 +2113,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'id' => 100,
         );
         $expected = array(AmazonDynamoDB::TYPE_BINARY => $data['id']);
-        $result = $this->DynamoDB->_setBinaryPrimaryKey(
+        $result = $this->DynamoDB->_setBinaryPrimaryKeyValue(
             $this->Post,
             'id',
             $data
@@ -1955,7 +2124,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'Post.id' => 100,
         );
         $expected = array(AmazonDynamoDB::TYPE_BINARY => $data['Post.id']);
-        $result = $this->DynamoDB->_setBinaryPrimaryKey(
+        $result = $this->DynamoDB->_setBinaryPrimaryKeyValue(
             $this->Post,
             'id',
             $data
@@ -1967,7 +2136,7 @@ class DynamoDBTestCase extends CakeTestCase {
             'title' => 'The super story',
             'text'  => 'The super story is a test'
         );
-        $result = $this->DynamoDB->_setBinaryPrimaryKey($this->Post, 'id', $data);
+        $result = $this->DynamoDB->_setBinaryPrimaryKeyValue($this->Post, 'id', $data);
         $this->assertNotNull($result[AmazonDynamoDB::TYPE_BINARY]);
         
     }
