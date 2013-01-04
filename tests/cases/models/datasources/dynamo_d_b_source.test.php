@@ -1820,6 +1820,10 @@ class DynamoDBTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _castValue
+     *
+     */
     public function testCastValue() {
         
         $value = 1;
@@ -1908,40 +1912,6 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertEqual($result, $expected);
         
     }
-    
-    // /**
-    //  * Test _setPrimaryKey
-    //  *
-    //  */
-    // public function testSetPrimaryKey() {
-    //     
-    //     $this->DynamoDB->connected = false;
-    //     $this->assertFalse($this->DynamoDB->_setPrimaryKey($this->Post, array()));
-    //     $this->DynamoDB->connected = true;
-    //     
-    //     
-    //     $data = array(
-    //         'id'    => 100,
-    //         'rev'   => 2,
-    //         'title' => 'The super story',
-    //         'text'  => 'The super story is a test'
-    //     );
-    //     
-    //     $this->Post->primaryKeySchema = array(
-    //         'HashKeyElement' => array(
-    //             'AttributeName' => 'id',
-    //             'AttributeType' => 'S'
-    //         )
-    //     );
-    //     $expected = array(
-    //         'HashKeyElement' => array(
-    //             AmazonDynamoDB::TYPE_STRING => (string)$data['id']
-    //         )
-    //     );
-    //     $result = $this->DynamoDB->_setPrimaryKey($this->Post, $data);
-    //     $this->assertEqual($result, $expected);
-    // 
-    // }
     
     public function testSetHashPrimaryKey() {
         
