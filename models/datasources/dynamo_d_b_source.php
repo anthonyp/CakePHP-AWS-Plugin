@@ -193,6 +193,11 @@ class DynamoDBSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
+        
+        if (empty($model->schema)) {
+            trigger_error(__('Schema is not configured in the model.', true));
+        }
+        
         $options = array(
             'TableName' => $model->table
         );
@@ -279,13 +284,17 @@ class DynamoDBSource extends DataSource {
         
         if (!empty($query['conditions'])) {
             if (empty($query['conditions'][$model->alias .'.'. $model->primaryKey])) {
-                $key = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
+                $value = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
             } else {
-                $key = $query['conditions'][$model->alias .'.'. $model->primaryKey];
+                $value = $query['conditions'][$model->alias .'.'. $model->primaryKey];
             }
+            $value = $this->_castValue(
+                $model->primaryKeySchema['HashKeyElement']['AttributeType'],
+                $value
+            );
             $options = array(
                 'TableName' => $model->table,
-                'Key' => array('HashKeyElement'=>$this->_setVarType($key)),
+                'Key' => array('HashKeyElement'=>$this->_setVarType($value)),
             );
             $response = $this->connection->get_item($options);
             $results = $this->_parseItem($model, $response);
@@ -385,7 +394,7 @@ class DynamoDBSource extends DataSource {
      *
      * @param object $model Model object
      * @param object $response Response object
-     * @return mixed
+     * @return mixed Returns false on error. Item element array on success.
      * @since 0.1
      */
     public function _parseItem(&$model, $response = null) {
@@ -405,9 +414,9 @@ class DynamoDBSource extends DataSource {
     /**
      * Parse the Items element from an API call response
      *
-     * @param object $model Model object
-     * @param object $response Response object
-     * @return void
+     * @param object $model Model object.
+     * @param object $response Response object.
+     * @return mixed Returns false on error. Items element array on success.
      * @since 0.1
      */
     public function _parseItems(&$model, $response = null) {
@@ -437,9 +446,9 @@ class DynamoDBSource extends DataSource {
     /**
      * Parse the Table element from an API call response
      *
-     * @param object $model Model object
-     * @param object $response Response object
-     * @return void
+     * @param object $model Model object.
+     * @param object $response Response object.
+     * @return mixed Returns false on error. Table element array on success.
      * @since 0.1
      */
     public function _parseTable(&$model, $response = null) {
@@ -448,6 +457,30 @@ class DynamoDBSource extends DataSource {
             return false;
         }
         return $data['body']['Table'];
+    }
+    
+    /**
+     * Cast value
+     *
+     * @param string $type Type accord to Amazon DynamoDB spec.
+     * @param string $value Value to cast.
+     * @return mixed Return string, integer or binary.
+     * @since 0.1
+     */
+    public function _castValue($type, $value) {
+        switch($type) {
+            case 'S':
+                $value = (string)$value;
+                break;
+            case 'N':
+                $value = (int)$value;
+                break;
+            case 'B':
+                $value = (binary)$value;
+                break;
+            default:
+        }
+        return $value;
     }
     
     /**
@@ -593,8 +626,9 @@ class DynamoDBSource extends DataSource {
                 AmazonDynamoDB::TYPE_NUMBER => $data[$model->alias.'.'.$name]
             );
         } else {
+            $number = str_replace('.', '', microtime(true));
             return array(
-                AmazonDynamoDB::TYPE_NUMBER => (string)microtime(true)
+                AmazonDynamoDB::TYPE_NUMBER => (string)$number
             );
         }
     }

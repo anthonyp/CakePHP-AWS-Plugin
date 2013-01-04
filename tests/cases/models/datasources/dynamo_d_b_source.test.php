@@ -352,6 +352,7 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertTrue($this->Post->save($data));
         
         $result = $this->Post->read(null, $postId);
+        debug($result);
         $this->assertEqual(
             $result['Post']['title'],
             $postTitle .' (updated)'
@@ -1816,6 +1817,27 @@ class DynamoDBTestCase extends CakeTestCase {
             array($this->Post->alias => array('item1' => 1))
         );
         $this->assertEqual($result, $expected);
+        
+    }
+    
+    public function testCastValue() {
+        
+        $value = 1;
+        $result = $this->DynamoDB->_castValue('S', $value);
+        $this->assertTrue(is_string($result));
+        
+        $value = '1';
+        $result = $this->DynamoDB->_castValue('N', $value);
+        $this->assertTrue(is_numeric($result));
+        
+        $value = 1;
+        $expected = (binary)$value;
+        $result = $this->DynamoDB->_castValue('B', $value);
+        $this->assertTrue($result === $expected);
+        
+        $expected = 1;
+        $result = $this->DynamoDB->_castValue('X', $expected);
+        $this->assertTrue($result === $expected);
         
     }
     
