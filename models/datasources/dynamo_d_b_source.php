@@ -74,7 +74,7 @@ class DynamoDBSource extends DataSource {
     }
     
     /**
-     * Deconstructor, closes the current datasource
+     * Destructor, closes the current datasource
      *
      * @return boolean Success.
      * @since 0.1
@@ -315,16 +315,8 @@ class DynamoDBSource extends DataSource {
         
         extract($query);
         
-        // is it set by find type?
-        if ($model->findQueryType == 'query') {
-            return 'query';
-        }
-        if ($model->findQueryType == 'scan') {
-            return 'scan';
-        }
-        
         // get_item?
-        if (!empty($conditions) && count(array_keys($conditions))==1) {
+        if (!empty($conditions) && count($conditions)==1) {
             if (!empty($conditions[$model->alias .'.'. $model->primaryKey])) {
                 return 'get_item';
             }
@@ -338,7 +330,7 @@ class DynamoDBSource extends DataSource {
         
         
         // is scan?
-        
+        return 'scan';
         
         
         return false;
@@ -403,7 +395,10 @@ class DynamoDBSource extends DataSource {
             $options['ExclusiveStartKey'] = $exclusiveStartKey;
         }
         
-        return $this->connection->query($options);
+        $r = $this->connection->query($options);
+        debug($r);
+        
+        return $r;
     }
     
     public function _readWithScan(&$model, $query = array()) {
@@ -426,13 +421,29 @@ class DynamoDBSource extends DataSource {
             $options['Count'] = $count;
         }
         
-        $options['ScanFilter'] = array();
+        if (!empty($conditions)) {
+            $conditions = $this->_getConditions($model, $conditions);
+            if (!empty($conditions)) {
+                $options['ScanFilter'] = array();
+                foreach($conditions as $field=>$value) {
+                    $options['ScanFilter'][$field] = array(
+                        'ComparisonOperator' => $value['operator'],
+                        'AttributeValueList' => $value['value']
+                    );
+                }
+            }
+        }
         
         if (!empty($exclusiveStartKey)) {
             $options['ExclusiveStartKey'] = $exclusiveStartKey;
         }
         
-        return $this->connection->scan($options);
+        $response = $this->connection->scan($options);
+        if ($response->status != 200) {
+            trigger_error($response->body->message);
+        }
+        //debug($response);
+        return $response;
     }
     
     /**
@@ -553,7 +564,7 @@ class DynamoDBSource extends DataSource {
             }
             $conditions[$field] = array(
                 'operator' => $operators[$operator],
-                'value' => $value
+                'value' => array($this->_setValueType($value))
             );
         }
         return $conditions;

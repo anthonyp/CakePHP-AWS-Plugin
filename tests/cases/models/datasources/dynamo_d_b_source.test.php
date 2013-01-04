@@ -317,6 +317,8 @@ class DynamoDBTestCase extends CakeTestCase {
             $postTitle
         );
         
+        $this->assertTrue($this->Post->delete($postId));
+        
     }
     
     /**
@@ -365,6 +367,7 @@ class DynamoDBTestCase extends CakeTestCase {
         $result = $this->DynamoDB->read($this->Post, $query);
         $this->assertNotNull($result);
         
+        $this->assertTrue($this->Post->delete($postId));
     }
     
     /**
@@ -405,6 +408,8 @@ class DynamoDBTestCase extends CakeTestCase {
             $postTitle .' (updated)'
         );
         
+        $this->assertTrue($this->Post->delete($postId));
+        
     }
     
     /**
@@ -433,91 +438,81 @@ class DynamoDBTestCase extends CakeTestCase {
         
     }
     
-    // public function testFindFirst() {
-    //     
-    //     $result = $this->Post->find('first', array());
-    //     
-    // }
-    // 
-    // public function testFindCount() {
-    //     
-    //     $result = $this->Post->find('count', array());
-    //     
-    // }
-    // 
-    // public function testFindAll() {
-    //     
-    //     $result = $this->Post->find('all', array());
-    //     
-    // }
-    // 
-    // public function testFindList() {
-    //     
-    //     $result = $this->Post->find('list', array());
-    //     
-    // }
-    // 
-    // public function testFindAllBy() {
-    //     
-    //     $result = $this->Post->findAllByTitle('first');
-    //     
-    // }
-    // 
-    // public function testFindBy() {
-    //     
-    //     $result = $this->Post->findByTitle('first');
-    //     
-    // }
-    // 
-    // public function testFindFields() {
-    //     
-    // }
-    // 
-    // public function testFindLimit() {
-    //     
-    // }
-    // 
-    // public function testFindOrder() {
-    //     
-    // }
-    // 
-    // public function testFindConditions() {
-    //     
-    // }
-    // 
-    // public function testFindRecursive() {
-    //     
-    // }
-    // 
-    // public function testField() {
-    //     
-    // }
+    public function testFindFirst() {
+        
+    }
+    
+    public function testFindCount() {
+        
+    }
+    
+    public function testFindAll() {
+        
+    }
+    
+    public function testFindList() {
+        
+    }
+    
+    public function testFindAllBy() {
+        
+    }
+    
+    public function testFindBy() {
+        
+    }
+    
+    public function testFindFields() {
+        
+    }
+    
+    public function testFindLimit() {
+        
+    }
+    
+    public function testFindOrder() {
+        
+    }
+    
+    public function testFindConditions() {
+        
+    }
+    
+    public function testFindRecursive() {
+        
+    }
+    
+    public function testField() {
+        
+    }
     
     /**
      * CakePHP ATOM operations
      *
      */
-    // public function testSaveAll() {
-    //     
-    // }
-    // 
-    // public function testUpdateAll() {
-    //     
-    // }
-    // 
-    // public function testDeleteAll() {
-    //     
-    // }
-    // 
-    // public function testCounterCache() {
-    //     
-    // }
+    public function testSaveAll() {
+        
+    }
+    
+    public function testUpdateAll() {
+        
+    }
+    
+    public function testDeleteAll() {
+        
+    }
+    
+    public function testCounterCache() {
+        
+    }
     
     /**
      * Test _getConditions
      *
      */
     public function testGetConditions() {
+        
+        return;
         
         $conditions = array();
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -678,51 +673,212 @@ class DynamoDBTestCase extends CakeTestCase {
      * Find conditions
      *
      */
-    public function testFindEqual() {
+    public function testFindScanEqual() {
+        
+        $postId = uniqid();
+        $postTitle = 'Post #'. rand();
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => rand(1,9),
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title' => $postTitle
+            )
+        ));
+        $this->assertEqual($result, $expected);
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title =' => $postTitle
+            )
+        ));
+        $this->assertEqual($result, $expected);
         
     }
     
-    public function testFindNotEqual() {
+    public function testFindScanNotEqual() {
+        
+        $postId = uniqid();
+        $postRev = rand();
+        $postTitle = 'Post #'. $postRev;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title !=' => 'The super story',
+                'Post.rev' => $postRev
+            )
+        ));
+        $this->assertEqual($result, $expected);
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
-    public function testFindLessThan() {
+    public function testFindScanLessThan() {
+        
+        $postId = uniqid();
+        $postRev = 2;
+        $postTitle = 'Post #'. $postRev;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.rev <' => 2
+            )
+        ));
+        $this->assertTrue(count($result)>0);
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
-    public function testFindLessThanOrEqualTo() {
+    public function testFindScanLessThanOrEqualTo() {
+        
+        $postId = uniqid();
+        $postRev = 2;
+        $postTitle = 'Post #'. $postRev;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.rev <=' => 2
+            )
+        ));
+        $this->assertTrue(count($result)>0);
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
-    public function testFindGreaterThan() {
+    public function testFindScanGreaterThan() {
+        
+        $postId = uniqid();
+        $postRev = 99999999999;
+        $postTitle = 'Post #'. $postRev;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.rev >' => ($postRev - 1)
+            )
+        ));
+        $this->assertTrue(count($result)>0);
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
-    public function testFindNull() {
+    public function testFindScanGreaterThanOrEqualTo() {
+        
+        $postId = uniqid();
+        $postRev = rand();
+        $postTitle = 'Post #'. $postRev;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.rev >=' => $postRev
+            )
+        ));
+        $this->assertTrue(count($result)>0);
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
-    public function testFindNotNull() {
+    public function testFindScanNull() {
+        
         
     }
     
-    public function testFindContain() {
+    public function testFindScanNotNull() {
         
     }
     
-    public function testFindDoesntContain() {
+    public function testFindScanContain() {
         
     }
     
-    public function testFindIn() {
+    public function testFindScanDoesntContain() {
         
     }
     
-    public function testFindBetween() {
+    public function testFindScanIn() {
         
     }
     
-    public function testFindBeginsWith() {
+    public function testFindScanBetween() {
+        
+    }
+    
+    public function testFindScanBeginsWith() {
+        
+    }
+    
+    /**
+     * Update with optional action option
+     *
+     */
+    public function testSaveWithActionAdd() {
+        
+    }
+    
+    public function testSaveWithActionDelete() {
+        
+    }
+    
+    public function testSaveWithActionPut() {
         
     }
     
@@ -730,37 +886,26 @@ class DynamoDBTestCase extends CakeTestCase {
      * Save with optional return option
      *
      */
-    // public function testSaveWithActionAdd() {
-    //     
-    // }
-    // 
-    // public function testSaveWithActionDelete() {
-    //     
-    // }
-    // 
-    // public function testSaveWithActionPut() {
-    //     
-    // }
     
-    // public function testReadReturnNone() {
-    //     
-    // }
-    // 
-    // public function testReadReturnAllOld() {
-    //     
-    // }
-    // 
-    // public function testReadReturnAllNew() {
-    //     
-    // }
-    // 
-    // public function testReadReturnUpdatedOld() {
-    //     
-    // }
-    // 
-    // public function testReadReturnUpdatedNew() {
-    //     
-    // }
+    public function testReadReturnNone() {
+        
+    }
+    
+    public function testReadReturnAllOld() {
+        
+    }
+    
+    public function testReadReturnAllNew() {
+        
+    }
+    
+    public function testReadReturnUpdatedOld() {
+        
+    }
+    
+    public function testReadReturnUpdatedNew() {
+        
+    }
     
     /**
      * Test query
