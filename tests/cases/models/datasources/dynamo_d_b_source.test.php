@@ -503,9 +503,15 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function testGetConditions() {
         
-        return;
-        
         $conditions = array();
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, array());
+        
+        $conditions = array('OR'=>array());
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, array());
+        
+        $conditions = array('title X'=>'The super story');
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
         $this->assertEqual($result, array());
         
@@ -513,7 +519,21 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'title' => array(
                 'operator' => AmazonDynamoDB::CONDITION_EQUAL,
-                'value' => 'The super story'
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'The super story')
+                )
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title'=>'The super story');
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_EQUAL,
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'The super story')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -523,7 +543,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'title' => array(
                 'operator' => AmazonDynamoDB::CONDITION_EQUAL,
-                'value' => 'The super story'
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'The super story')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -533,7 +555,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'title' => array(
                 'operator' => AmazonDynamoDB::CONDITION_NOT_EQUAL,
-                'value' => 'The super story'
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'The super story')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -543,7 +567,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'title' => array(
                 'operator' => AmazonDynamoDB::CONDITION_NOT_EQUAL,
-                'value' => 'The super story'
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'The super story')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -553,7 +579,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'rev' => array(
                 'operator' => AmazonDynamoDB::CONDITION_GREATER_THAN,
-                'value' => 1
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_NUMBER => '1')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -563,7 +591,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'rev' => array(
                 'operator' => AmazonDynamoDB::CONDITION_GREATER_THAN_OR_EQUAL,
-                'value' => 1
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_NUMBER => '1')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -573,7 +603,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'rev' => array(
                 'operator' => AmazonDynamoDB::CONDITION_LESS_THAN,
-                'value' => 1
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_NUMBER => '1')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -583,7 +615,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'rev' => array(
                 'operator' => AmazonDynamoDB::CONDITION_LESS_THAN_OR_EQUAL,
-                'value' => 1
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_NUMBER => '1')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -592,8 +626,7 @@ class DynamoDBTestCase extends CakeTestCase {
         $conditions = array('Post.title NULL'=>1);
         $expected = array(
             'title' => array(
-                'operator' => AmazonDynamoDB::CONDITION_NULL,
-                'value' => 1
+                'operator' => AmazonDynamoDB::CONDITION_NULL
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -602,8 +635,7 @@ class DynamoDBTestCase extends CakeTestCase {
         $conditions = array('Post.title NOT NULL'=>1);
         $expected = array(
             'title' => array(
-                'operator' => AmazonDynamoDB::CONDITION_NOT_NULL,
-                'value' => 1
+                'operator' => AmazonDynamoDB::CONDITION_NOT_NULL
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -613,7 +645,23 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'tags' => array(
                 'operator' => AmazonDynamoDB::CONDITION_CONTAINS,
-                'value' => array('ONE', 'TWO', 'THREE')
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'ONE'),
+                    array(AmazonDynamoDB::TYPE_STRING => 'TWO'),
+                    array(AmazonDynamoDB::TYPE_STRING => 'THREE')
+                )
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.tags CONTAINS'=>'ONE');
+        $expected = array(
+            'tags' => array(
+                'operator' => AmazonDynamoDB::CONDITION_CONTAINS,
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'ONE')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -623,7 +671,11 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'tags' => array(
                 'operator' => AmazonDynamoDB::CONDITION_DOESNT_CONTAIN,
-                'value' => array('ONE', 'TWO', 'THREE')
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'ONE'),
+                    array(AmazonDynamoDB::TYPE_STRING => 'TWO'),
+                    array(AmazonDynamoDB::TYPE_STRING => 'THREE')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -633,7 +685,11 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'tags' => array(
                 'operator' => AmazonDynamoDB::CONDITION_IN,
-                'value' => array('ONE', 'TWO', 'THREE')
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'ONE'),
+                    array(AmazonDynamoDB::TYPE_STRING => 'TWO'),
+                    array(AmazonDynamoDB::TYPE_STRING => 'THREE')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -643,7 +699,10 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'rev' => array(
                 'operator' => AmazonDynamoDB::CONDITION_BETWEEN,
-                'value' => array(1, 5)
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_NUMBER => '1'),
+                    array(AmazonDynamoDB::TYPE_NUMBER => '5')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -653,7 +712,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'title' => array(
                 'operator' => AmazonDynamoDB::CONDITION_BEGINS_WITH,
-                'value' => 'The super'
+                'value' => array(
+                    array(AmazonDynamoDB::TYPE_STRING => 'The super')
+                )
             )
         );
         $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
@@ -914,7 +975,7 @@ class DynamoDBTestCase extends CakeTestCase {
         
     }
     
-    public function testFindScanDoesntContains() {
+    public function testFindScanDoesntContain() {
         
         $postId = uniqid();
         $postRev = rand();
@@ -2991,15 +3052,33 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '103'                       ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => 'Book 103 Title'            ),
-                'ISBN'            => array( AmazonDynamoDB::TYPE_STRING           => '333-3333333333'            ),
-                'Authors'         => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Author1', 'Author2') ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '2000'                      ),
-                'Dimensions'      => array( AmazonDynamoDB::TYPE_STRING           => '8.5 x 11.0 x 1.5'          ),
-                'PageCount'       => array( AmazonDynamoDB::TYPE_NUMBER           => '600'                       ),
-                'InPublication'   => array( AmazonDynamoDB::TYPE_NUMBER           => '0'                         ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Book'                      )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '103'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Book 103 Title'
+                ),
+                'ISBN' => array(
+                    AmazonDynamoDB::TYPE_STRING => '333-3333333333'
+                ),
+                'Authors' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Author1', 'Author2')
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '2000'
+                ),
+                'Dimensions' => array(
+                    AmazonDynamoDB::TYPE_STRING => '8.5 x 11.0 x 1.5'
+                ),
+                'PageCount' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '600'
+                ),
+                'InPublication' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '0'
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Book'
+                )
             )
         ));
         
