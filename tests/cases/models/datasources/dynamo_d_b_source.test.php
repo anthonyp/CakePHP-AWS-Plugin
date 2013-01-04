@@ -3085,134 +3085,272 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '201'                 ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => '18-Bike-201'         ),
-                'Description'     => array( AmazonDynamoDB::TYPE_STRING           => '201 Description'     ),
-                'BicycleType'     => array( AmazonDynamoDB::TYPE_STRING           => 'Road'                ),
-                'Brand'           => array( AmazonDynamoDB::TYPE_STRING           => 'Mountain A'          ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '100'                 ),
-                'Gender'          => array( AmazonDynamoDB::TYPE_STRING           => 'M'                   ),
-                'Color'           => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red', 'Black') ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Bicycle'             )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '201'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => '18-Bike-201'
+                ),
+                'Description' => array(
+                    AmazonDynamoDB::TYPE_STRING => '201 Description'
+                ),
+                'BicycleType' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Road'
+                ),
+                'Brand' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Mountain A'
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '100'
+                ),
+                'Gender' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'M'
+                ),
+                'Color' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red', 'Black')
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Bicycle'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '202'                   ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => '21-Bike-202'           ),
-                'Description'     => array( AmazonDynamoDB::TYPE_STRING           => '202 Description'       ),
-                'BicycleType'     => array( AmazonDynamoDB::TYPE_STRING           => 'Road'                  ),
-                'Brand'           => array( AmazonDynamoDB::TYPE_STRING           => 'Brand-Company A'       ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '200'                   ),
-                'Gender'          => array( AmazonDynamoDB::TYPE_STRING           => 'M'                     ),
-                'Color'           => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Green', 'Black') ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Bicycle'               )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '202'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => '21-Bike-202'
+                ),
+                'Description' => array(
+                    AmazonDynamoDB::TYPE_STRING => '202 Description'
+                ),
+                'BicycleType' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Road'
+                ),
+                'Brand' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Brand-Company A'
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '200'
+                ),
+                'Gender' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'M'
+                ),
+                'Color' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Green', 'Black')
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Bicycle'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '203'                          ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => '19-Bike-203'                  ),
-                'Description'     => array( AmazonDynamoDB::TYPE_STRING           => '203 Description'              ),
-                'BicycleType'     => array( AmazonDynamoDB::TYPE_STRING           => 'Road'                         ),
-                'Brand'           => array( AmazonDynamoDB::TYPE_STRING           => 'Brand-Company B'              ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '300'                          ),
-                'Gender'          => array( AmazonDynamoDB::TYPE_STRING           => 'W'                            ),
-                'Color'           => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red', 'Green', 'Black') ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Bicycle'                      )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '203'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => '19-Bike-203'
+                ),
+                'Description' => array(
+                    AmazonDynamoDB::TYPE_STRING => '203 Description'
+                ),
+                'BicycleType' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Road'
+                ),
+                'Brand' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Brand-Company B'
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '300'
+                ),
+                'Gender' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'W'
+                ),
+                'Color' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red', 'Green', 'Black')
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Bicycle'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '204'             ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => '18-Bike-204'     ),
-                'Description'     => array( AmazonDynamoDB::TYPE_STRING           => '204 Description' ),
-                'BicycleType'     => array( AmazonDynamoDB::TYPE_STRING           => 'Mountain'        ),
-                'Brand'           => array( AmazonDynamoDB::TYPE_STRING           => 'Brand-Company B' ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '400'             ),
-                'Gender'          => array( AmazonDynamoDB::TYPE_STRING           => 'W'               ),
-                'Color'           => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red')      ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Bicycle'         )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '204'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => '18-Bike-204'
+                ),
+                'Description' => array(
+                    AmazonDynamoDB::TYPE_STRING => '204 Description'
+                ),
+                'BicycleType' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Mountain'
+                ),
+                'Brand' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Brand-Company B'
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '400'
+                ),
+                'Gender' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'W'
+                ),
+                'Color' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red')
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Bicycle'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '205'                 ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => '20-Bike-205'         ),
-                'Description'     => array( AmazonDynamoDB::TYPE_STRING           => '205 Description'     ),
-                'BicycleType'     => array( AmazonDynamoDB::TYPE_STRING           => 'Hybrid'              ),
-                'Brand'           => array( AmazonDynamoDB::TYPE_STRING           => 'Brand-Company C'     ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '500'                 ),
-                'Gender'          => array( AmazonDynamoDB::TYPE_STRING           => 'B'                   ),
-                'Color'           => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red', 'Black') ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Bicycle'             )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '205'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => '20-Bike-205'
+                ),
+                'Description' => array(
+                    AmazonDynamoDB::TYPE_STRING => '205 Description'
+                ),
+                'BicycleType' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Hybrid'
+                ),
+                'Brand' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Brand-Company C'
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '500'
+                ),
+                'Gender' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'B'
+                ),
+                'Color' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Red', 'Black')
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Bicycle'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testForum',
             'Item' => array(
-                'Name'     => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB'     ), // Hash Key
-                'Category' => array( AmazonDynamoDB::TYPE_STRING => 'Amazon Web Services' ),
-                'Threads'  => array( AmazonDynamoDB::TYPE_NUMBER => '0'                   ),
-                'Messages' => array( AmazonDynamoDB::TYPE_NUMBER => '0'                   ),
-                'Views'    => array( AmazonDynamoDB::TYPE_NUMBER => '1000'                ),
+                'Name' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB'
+                ),
+                'Category' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon Web Services'
+                ),
+                'Threads' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '0'
+                ),
+                'Messages' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '0'
+                ),
+                'Views' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '1000'
+                ),
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testForum',
             'Item' => array(
-                'Name'     => array( AmazonDynamoDB::TYPE_STRING => 'Amazon S3'           ), // Hash Key
-                'Category' => array( AmazonDynamoDB::TYPE_STRING => 'Amazon Web Services' ),
-                'Threads'  => array( AmazonDynamoDB::TYPE_NUMBER => '0'                   )
+                'Name' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon S3'
+                ),
+                'Category' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon Web Services'
+                ),
+                'Threads' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '0'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testReply',
             'Item' => array(
-                'Id'            => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 1' ), // Hash Key
-                'ReplyDateTime' => array( AmazonDynamoDB::TYPE_STRING => $this->fourteen_days_ago                 ), // Range Key
-                'Message'       => array( AmazonDynamoDB::TYPE_STRING => 'DynamoDB Thread 1 Reply 2 text'    ),
-                'PostedBy'      => array( AmazonDynamoDB::TYPE_STRING => 'User B'                            ),
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 1'
+                ),
+                'ReplyDateTime' => array(
+                    AmazonDynamoDB::TYPE_STRING => $this->fourteen_days_ago
+                ),
+                'Message' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'DynamoDB Thread 1 Reply 2 text'
+                ),
+                'PostedBy' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'User B'
+                ),
             )
         ));
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testReply',
             'Item' => array(
-                'Id'            => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2' ), // Hash Key
-                'ReplyDateTime' => array( AmazonDynamoDB::TYPE_STRING => $this->twenty_one_days_ago                    ), // Range Key
-                'Message'       => array( AmazonDynamoDB::TYPE_STRING  => 'DynamoDB Thread 2 Reply 3 text'   ),
-                'PostedBy'      => array( AmazonDynamoDB::TYPE_STRING => 'User B'                            ),
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+                ),
+                'ReplyDateTime' => array(
+                    AmazonDynamoDB::TYPE_STRING => $this->twenty_one_days_ago
+                ),
+                'Message' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'DynamoDB Thread 2 Reply 3 text'
+                ),
+                'PostedBy' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'User B'
+                ),
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testReply',
             'Item' => array(
-                'Id'            => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2' ), // Hash Key
-                'ReplyDateTime' => array( AmazonDynamoDB::TYPE_STRING => $this->seven_days_ago                    ), // Range Key
-                'Message'       => array( AmazonDynamoDB::TYPE_STRING  => 'DynamoDB Thread 2 Reply 2 text'   ),
-                'PostedBy'      => array( AmazonDynamoDB::TYPE_STRING => 'User A'                            ),
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+                ),
+                'ReplyDateTime' => array(
+                    AmazonDynamoDB::TYPE_STRING => $this->seven_days_ago
+                ),
+                'Message' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'DynamoDB Thread 2 Reply 2 text'
+                ),
+                'PostedBy' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'User A'
+                ),
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testReply',
             'Item' => array(
-                'Id'            => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2' ), // Hash Key
-                'ReplyDateTime' => array( AmazonDynamoDB::TYPE_STRING => $this->one_day_ago                       ), // Range Key
-                'Message'       => array( AmazonDynamoDB::TYPE_STRING  => 'DynamoDB Thread 2 Reply 1 text'   ),
-                'PostedBy'      => array( AmazonDynamoDB::TYPE_STRING => 'User A'                            ),
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+                ),
+                'ReplyDateTime' => array(
+                    AmazonDynamoDB::TYPE_STRING => $this->one_day_ago
+                ),
+                'Message' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'DynamoDB Thread 2 Reply 1 text'
+                ),
+                'PostedBy' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'User A'
+                ),
             )
         ));
         
