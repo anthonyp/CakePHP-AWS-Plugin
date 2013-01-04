@@ -268,7 +268,6 @@ class DynamoDBSource extends DataSource {
      *
      * Reads record(s) from the database.
      *
-     * @todo Support for Hash and Range primary keys.
      * @param object $model A Model object that the query is for.
      * @param array $query An array of queryData information containing 
      *        keys similar to Model::find().
@@ -281,36 +280,160 @@ class DynamoDBSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
-        
-        if (!empty($query['conditions'])) {
-            if (empty($query['conditions'][$model->alias .'.'. $model->primaryKey])) {
-                $value = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
-            } else {
-                $value = $query['conditions'][$model->alias .'.'. $model->primaryKey];
-            }
-            $value = $this->_castValue(
-                $model->primaryKeySchema['HashKeyElement']['AttributeType'],
-                $value
-            );
-            $options = array(
-                'TableName' => $model->table,
-                'Key' => array('HashKeyElement'=>$this->_setValueType($value)),
-            );
-            $response = $this->connection->get_item($options);
-            $results = $this->_parseItem($model, $response);
+        $readType = $this->_getReadType($model, $query);
+        switch($readType) {
+            case 'get_item':
+                $results = $this->_readWithGetItem($model, $query);
+                break;
+            case 'query':
+                $results = $this->_readWithQuery($model, $query);
+                break;
+            case 'scan':
+                $results = $this->_readWithScan($model, $query);
+                break;
+            default:
+                return false;
+        }
+        if ($readType == 'get_item') {
+            $results = $this->_parseItem($model, $results);
         } else {
-            $options = array(
-                'TableName' => $model->table
-            );
-            $response = $this->connection->scan($options);
-            $results = $this->_parseItems($model, $response);
+            $results = $this->_parseItems($model, $results);
         }
         if ($model->findQueryType == 'count') {
             return array('0'=>array('0'=>array('count'=>count($results))));
         }
+        if ($model->findQueryType == 'list') {
+            
+        }
+        if ($model->findQueryType == 'first') {
+            
+        }
         return $results;
     }
     
+    public function _getReadType(&$model, $query = array()) {
+        
+        extract($query);
+        
+        // is it set by find type?
+        if ($model->findQueryType == 'query') {
+            return 'query';
+        }
+        if ($model->findQueryType == 'scan') {
+            return 'scan';
+        }
+        
+        // get_item?
+        if (!empty($conditions) && count(array_keys($conditions))==1) {
+            if (!empty($conditions[$model->alias .'.'. $model->primaryKey])) {
+                return 'get_item';
+            }
+            if (!empty($conditions[$model->primaryKey])) {
+                return 'get_item';
+            }
+        }
+        
+        // is query?
+        
+        
+        
+        // is scan?
+        
+        
+        
+        return false;
+        
+    }
+    
+    public function _readWithGetItem(&$model, $query = array()) {
+        
+        extract($query);
+        
+        if (empty($conditions[$model->alias .'.'. $model->primaryKey])) {
+            $value = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
+        } else {
+            $value = $conditions[$model->alias .'.'. $model->primaryKey];
+        }
+        $value = $this->_castValue(
+            $model->primaryKeySchema['HashKeyElement']['AttributeType'],
+            $value
+        );
+        $options = array(
+            'TableName' => $model->table,
+            'Key' => array('HashKeyElement'=>$this->_setValueType($value)),
+        );
+        
+        return $this->connection->get_item($options);
+        
+    }
+    
+    public function _readWithQuery(&$model, $query = array()) {
+        
+        extract($query);
+        
+        $options = array(
+            'TableName' => $model->table
+        );
+        
+        if (!empty($fields)) {
+            $options['AttributesToGet'] = $fields;
+        }
+        
+        if (!empty($limit)) {
+            $options['Limit'] = $limit;
+        }
+        
+        if (!empty($consistentRead)) {
+            $options['ConsistentRead'] = $consistentRead;
+        }
+        
+        if (!empty($count)) {
+            $options['Count'] = $count;
+        }
+        
+        $options['HashKeyValue'] = array();
+        
+        $options['RangeKeyCondition'] = array();
+        
+        if (!empty($scanIndexForward)) {
+            $options['ScanIndexForward'] = $scanIndexForward;
+        }
+        
+        if (!empty($exclusiveStartKey)) {
+            $options['ExclusiveStartKey'] = $exclusiveStartKey;
+        }
+        
+        return $this->connection->query($options);
+    }
+    
+    public function _readWithScan(&$model, $query = array()) {
+        
+        extract($query);
+        
+        $options = array(
+            'TableName' => $model->table
+        );
+        
+        if (!empty($fields)) {
+            $options['AttributesToGet'] = $fields;
+        }
+        
+        if (!empty($limit)) {
+            $options['Limit'] = $limit;
+        }
+        
+        if (!empty($count)) {
+            $options['Count'] = $count;
+        }
+        
+        $options['ScanFilter'] = array();
+        
+        if (!empty($exclusiveStartKey)) {
+            $options['ExclusiveStartKey'] = $exclusiveStartKey;
+        }
+        
+        return $this->connection->scan($options);
+    }
     
     /**
      * The "U" in CRUD
@@ -350,6 +473,7 @@ class DynamoDBSource extends DataSource {
      *
      * Delete a record from the database.
      *
+     * @todo add support for $conditions
      * @param object $model Model object that the record is for.
      * @param mixed $conditions The conditions to use for deleting.
      * @return boolean Success.
@@ -388,6 +512,53 @@ class DynamoDBSource extends DataSource {
         }
         return $this->connection->query($args[0]);
     }
+    
+    public function _getConditions(&$model, $conditions = array()) {
+        if (empty($conditions)) {
+            return array();
+        }
+        foreach($conditions as $field=>$value) {
+            unset($conditions[$field]);
+            // does not support OR
+            if ($field == 'OR') {
+                continue;
+            }
+            $field = array_pop(explode('.', $field));
+            $field = str_replace('NOT NULL', 'NOT_NULL', $field);
+            $field = str_replace('DOESNT CONTAINS', 'DOESNT_CONTAINS', $field);
+            $field = str_replace('BEGINS WITH', 'BEGINS_WITH', $field);
+            if (strpos($field, ' ') === false) {
+                $operator = '=';
+            } else {
+                list($field, $operator) = explode(' ', $field);
+            }
+            $operators = array(
+                '='                 => AmazonDynamoDB::CONDITION_EQUAL,
+                '!='                => AmazonDynamoDB::CONDITION_NOT_EQUAL,
+                '<>'                => AmazonDynamoDB::CONDITION_NOT_EQUAL,
+                '>'                 => AmazonDynamoDB::CONDITION_GREATER_THAN,
+                '>='                => AmazonDynamoDB::CONDITION_GREATER_THAN_OR_EQUAL,
+                '<'                 => AmazonDynamoDB::CONDITION_LESS_THAN,
+                '<='                => AmazonDynamoDB::CONDITION_LESS_THAN_OR_EQUAL,
+                'NULL'              => AmazonDynamoDB::CONDITION_NULL,
+                'NOT_NULL'          => AmazonDynamoDB::CONDITION_NOT_NULL,
+                'CONTAINS'          => AmazonDynamoDB::CONDITION_CONTAINS,
+                'DOESNT_CONTAINS'   => AmazonDynamoDB::CONDITION_DOESNT_CONTAIN,
+                'IN'                => AmazonDynamoDB::CONDITION_IN,
+                'BETWEEN'           => AmazonDynamoDB::CONDITION_BETWEEN,
+                'BEGINS_WITH'       => AmazonDynamoDB::CONDITION_BEGINS_WITH
+            );
+            if (!in_array($operator, array_keys($operators))) {
+                continue;
+            }
+            $conditions[$field] = array(
+                'operator' => $operators[$operator],
+                'value' => $value
+            );
+        }
+        return $conditions;
+    }
+    
     
     /**
      * Parse the Item element from an API call response
@@ -464,7 +635,7 @@ class DynamoDBSource extends DataSource {
      *
      * @param string $type Type accord to Amazon DynamoDB spec.
      * @param string $value Value to cast.
-     * @return mixed Return string, integer or binary.
+     * @return mixed Return the value as string, integer or binary.
      * @since 0.1
      */
     public function _castValue($type, $value) {

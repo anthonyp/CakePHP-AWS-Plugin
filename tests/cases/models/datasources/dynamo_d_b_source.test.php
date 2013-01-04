@@ -352,7 +352,6 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertTrue($this->Post->save($data));
         
         $result = $this->Post->read(null, $postId);
-        debug($result);
         $this->assertEqual(
             $result['Post']['title'],
             $postTitle .' (updated)'
@@ -515,23 +514,176 @@ class DynamoDBTestCase extends CakeTestCase {
     // }
     
     /**
+     * Test _getConditions
+     *
+     */
+    public function testGetConditions() {
+        
+        $conditions = array();
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, array());
+        
+        $conditions = array('title ='=>'The super story');
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_EQUAL,
+                'value' => 'The super story'
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title ='=>'The super story');
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_EQUAL,
+                'value' => 'The super story'
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title !='=>'The super story');
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_NOT_EQUAL,
+                'value' => 'The super story'
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title <>'=>'The super story');
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_NOT_EQUAL,
+                'value' => 'The super story'
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.rev >'=>1);
+        $expected = array(
+            'rev' => array(
+                'operator' => AmazonDynamoDB::CONDITION_GREATER_THAN,
+                'value' => 1
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.rev >='=>1);
+        $expected = array(
+            'rev' => array(
+                'operator' => AmazonDynamoDB::CONDITION_GREATER_THAN_OR_EQUAL,
+                'value' => 1
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.rev <'=>1);
+        $expected = array(
+            'rev' => array(
+                'operator' => AmazonDynamoDB::CONDITION_LESS_THAN,
+                'value' => 1
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.rev <='=>1);
+        $expected = array(
+            'rev' => array(
+                'operator' => AmazonDynamoDB::CONDITION_LESS_THAN_OR_EQUAL,
+                'value' => 1
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title NULL'=>1);
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_NULL,
+                'value' => 1
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title NOT NULL'=>1);
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_NOT_NULL,
+                'value' => 1
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.tags CONTAINS'=>array('ONE', 'TWO', 'THREE'));
+        $expected = array(
+            'tags' => array(
+                'operator' => AmazonDynamoDB::CONDITION_CONTAINS,
+                'value' => array('ONE', 'TWO', 'THREE')
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.tags DOESNT CONTAINS'=>array('ONE', 'TWO', 'THREE'));
+        $expected = array(
+            'tags' => array(
+                'operator' => AmazonDynamoDB::CONDITION_DOESNT_CONTAIN,
+                'value' => array('ONE', 'TWO', 'THREE')
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.tags IN'=>array('ONE', 'TWO', 'THREE'));
+        $expected = array(
+            'tags' => array(
+                'operator' => AmazonDynamoDB::CONDITION_IN,
+                'value' => array('ONE', 'TWO', 'THREE')
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.rev BETWEEN'=>array(1, 5));
+        $expected = array(
+            'rev' => array(
+                'operator' => AmazonDynamoDB::CONDITION_BETWEEN,
+                'value' => array(1, 5)
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+        
+        $conditions = array('Post.title BEGINS WITH'=>'The super');
+        $expected = array(
+            'title' => array(
+                'operator' => AmazonDynamoDB::CONDITION_BEGINS_WITH,
+                'value' => 'The super'
+            )
+        );
+        $result = $this->DynamoDB->_getConditions($this->Post, $conditions);
+        $this->assertEqual($result, $expected);
+    }
+    
+    /**
      * Find conditions
      *
      */
     public function testFindEqual() {
         
-        $result = $this->Post->find('all', array(
-            'conditions' => array(
-                'Post.title !=' => 'The super story'
-            )
-        ));
-        
-        debug($result);
-        
     }
     
     public function testFindNotEqual() {
-        $this->Post->find('all', array('conditions'=>array('Post.id'=>1), 'a'=>array('key1'=>1), array('key2'=>2), array('key3'=>3)));
+        
     }
     
     public function testFindLessThan() {
@@ -551,6 +703,10 @@ class DynamoDBTestCase extends CakeTestCase {
     }
     
     public function testFindNotNull() {
+        
+    }
+    
+    public function testFindContain() {
         
     }
     
@@ -928,7 +1084,7 @@ class DynamoDBTestCase extends CakeTestCase {
                         )
                     )
                 ),
-                'AttributesToGet' =>  array ('Threads')
+                'AttributesToGet' => array('Threads')
                 ),
             )
         );
