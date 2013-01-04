@@ -61,13 +61,26 @@ class Post extends AppModel {
             'null' => true,
             'length' => 34,
         ),
+        'reads' => array(
+            'type' => 'string',
+            'null' => true,
+            'length' => 34,
+        ),
         'title' => array(
             'type' => 'string',
             'null' => true,
             'length' => 255,
         ),
         'description' => array(
-            'type' => 'text',
+            'type' => 'string',
+            'null' => true,
+        ),
+        'tags' => array(
+            'type' => 'set',
+            'null' => true,
+        ),
+        'category' => array(
+            'type' => 'string',
             'null' => true,
         )
     );
@@ -263,7 +276,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertTrue($disconnect);
         
         // test connect passing the region
-        $this->assertTrue($this->DynamoDB->connect($this->DynamoDB->_config['host']));
+        $this->assertTrue($this->DynamoDB->connect(
+            $this->DynamoDB->_config['host'])
+        );
         
     }
     
@@ -479,30 +494,6 @@ class DynamoDBTestCase extends CakeTestCase {
     }
     
     public function testFindRecursive() {
-        
-    }
-    
-    public function testField() {
-        
-    }
-    
-    /**
-     * CakePHP ATOM operations
-     *
-     */
-    public function testSaveAll() {
-        
-    }
-    
-    public function testUpdateAll() {
-        
-    }
-    
-    public function testDeleteAll() {
-        
-    }
-    
-    public function testCounterCache() {
         
     }
     
@@ -753,7 +744,7 @@ class DynamoDBTestCase extends CakeTestCase {
                 'Post.rev <' => 2
             )
         ));
-        $this->assertTrue(count($result)>0);
+        $this->assertTrue((count($result)>0));
         
         $this->assertTrue($this->Post->delete($postId));
         
@@ -779,7 +770,7 @@ class DynamoDBTestCase extends CakeTestCase {
                 'Post.rev <=' => 2
             )
         ));
-        $this->assertTrue(count($result)>0);
+        $this->assertTrue((count($result)>0));
         
         $this->assertTrue($this->Post->delete($postId));
         
@@ -805,7 +796,7 @@ class DynamoDBTestCase extends CakeTestCase {
                 'Post.rev >' => ($postRev - 1)
             )
         ));
-        $this->assertTrue(count($result)>0);
+        $this->assertTrue((count($result)>0));
         
         $this->assertTrue($this->Post->delete($postId));
         
@@ -831,7 +822,7 @@ class DynamoDBTestCase extends CakeTestCase {
                 'Post.rev >=' => $postRev
             )
         ));
-        $this->assertTrue(count($result)>0);
+        $this->assertTrue((count($result)>0));
         
         $this->assertTrue($this->Post->delete($postId));
         
@@ -839,30 +830,221 @@ class DynamoDBTestCase extends CakeTestCase {
     
     public function testFindScanNull() {
         
+        $postId = uniqid();
+        $postRev = null;
+        $postTitle = 'Post #'. $postRev;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.rev NULL' => $postRev
+            )
+        ));
+        $this->assertTrue((count($result)>0));
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
     public function testFindScanNotNull() {
         
-    }
-    
-    public function testFindScanContain() {
+        $postId = uniqid();
+        $postReads = rand();
+        $postTitle = 'Post #'. $postReads;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'reads' => $postReads,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.reads NOT NULL' => $postReads
+            )
+        ));
+        $this->assertTrue((count($result)>0));
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
-    public function testFindScanDoesntContain() {
+    public function testFindScanContains() {
+        
+        $postId = uniqid();
+        $postRev = rand();
+        $postTitle = 'Post #'. $postId;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title CONTAINS' => (string)$postId
+            )
+        ));
+        $this->assertEqual($result, $expected);
+        
+        $this->expectError('The attempted filter operation is not supported for the provided filter argument count');
+        $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title CONTAINS' => array((string)$postId, 'Post')
+            )
+        ));
+        
+        $this->assertTrue($this->Post->delete($postId));
+        
+    }
+    
+    public function testFindScanDoesntContains() {
+        
+        $postId = uniqid();
+        $postRev = rand();
+        $postTitle = 'Article #'. $postId;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title DOESNT CONTAINS' => 'Post'
+            )
+        ));
+        $this->assertTrue((count($result)>0));
+        
+        $this->expectError('The attempted filter operation is not supported for the provided filter argument count');
+        $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title DOESNT CONTAINS' => array((string)$postId, 'Post')
+            )
+        ));
+        
+        $this->assertTrue($this->Post->delete($postId));
+        
+    }
+    
+    public function testFindScanBeginsWith() {
+        
+        $postId = uniqid();
+        $postRev = rand();
+        $postTitle = 'Article #'. $postId;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.title BEGINS WITH' => 'Article'
+            )
+        ));
+        $this->assertTrue((count($result)>0));
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
     public function testFindScanIn() {
         
+        $postId = uniqid();
+        $postRev = rand();
+        $postTitle = 'Article #'. $postId;
+        $postCategory = 'dynamodb';
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle,
+                'category' => $postCategory
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.category IN' => array($postCategory, 'amazon')
+            )
+        ));
+        $this->assertTrue((count($result)>0));
+        
+        $this->assertTrue($this->Post->delete($postId));
+        
     }
     
     public function testFindScanBetween() {
         
+        $postId = uniqid();
+        $postRev = rand();
+        $leftRev = $postRev -1;
+        $rightRev = $postRev +1;
+        $postTitle = 'Post #'. $postId;
+        $data = array(
+            'Post' => array(
+                'id' => $postId,
+                'rev' => $postRev,
+                'title' => $postTitle,
+                'description' => 'Description for '. $postTitle,
+            )
+        );
+        $this->assertTrue($this->Post->save($data));
+        
+        $expected = array($data);
+        $result = $this->Post->find('all', array(
+            'conditions' => array(
+                'Post.rev BETWEEN' => array($leftRev, $rightRev)
+            )
+        ));
+        $this->assertEqual($result, $expected);
+        
+        $this->assertTrue($this->Post->delete($postId));
+        
     }
     
-    public function testFindScanBeginsWith() {
+    /**
+     * CakePHP batch operations
+     *
+     */
+    public function testSaveAll() {
+        
+    }
+    
+    public function testUpdateAll() {
+        
+    }
+    
+    public function testDeleteAll() {
         
     }
     
@@ -920,7 +1102,9 @@ class DynamoDBTestCase extends CakeTestCase {
         $tableName = 'testReply';
         $options = array(
             'TableName' => $tableName, 
-            'HashKeyValue' => array(AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'),
+            'HashKeyValue' => array(
+                AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+            ),
         );
         $response = $this->DynamoDB->query($options);
         $this->assertEqual($response->status, 200);
@@ -1006,7 +1190,9 @@ class DynamoDBTestCase extends CakeTestCase {
                 'TableName' => 'testReply',
                 'Limit' => 2,
                 'ExclusiveStartKey' => $response->body->LastEvaluatedKey->to_array()->getArrayCopy(),
-                'HashKeyValue' => array( AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2' ),
+                'HashKeyValue' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Amazon DynamoDB#DynamoDB Thread 2'
+                ),
                 'RangeKeyCondition' => array(
                     'ComparisonOperator' => AmazonDynamoDB::CONDITION_GREATER_THAN_OR_EQUAL,
                     'AttributeValueList' => array(
@@ -2739,30 +2925,66 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '101'              ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => 'Book 101 Title'   ),
-                'ISBN'            => array( AmazonDynamoDB::TYPE_STRING           => '111-1111111111'   ),
-                'Authors'         => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Author1')   ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '2'                ),
-                'Dimensions'      => array( AmazonDynamoDB::TYPE_STRING           => '8.5 x 11.0 x 0.5' ),
-                'PageCount'       => array( AmazonDynamoDB::TYPE_NUMBER           => '500'              ),
-                'InPublication'   => array( AmazonDynamoDB::TYPE_NUMBER           => '1'                ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Book'             )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '101'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Book 101 Title'
+                ),
+                'ISBN' => array(
+                    AmazonDynamoDB::TYPE_STRING => '111-1111111111'
+                ),
+                'Authors' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Author1')
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '2'
+                ),
+                'Dimensions' => array(
+                    AmazonDynamoDB::TYPE_STRING => '8.5 x 11.0 x 0.5'
+                ),
+                'PageCount' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '500'
+                ),
+                'InPublication' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '1'
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Book'
+                )
             )
         ));
         
         $this->DynamoDB->connection->batch($queue)->put_item(array(
             'TableName' => 'testProductCatalog',
             'Item' => array(
-                'Id'              => array( AmazonDynamoDB::TYPE_NUMBER           => '102'                       ), // Hash Key
-                'Title'           => array( AmazonDynamoDB::TYPE_STRING           => 'Book 102 Title'            ),
-                'ISBN'            => array( AmazonDynamoDB::TYPE_STRING           => '222-2222222222'            ),
-                'Authors'         => array( AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Author1', 'Author2') ),
-                'Price'           => array( AmazonDynamoDB::TYPE_NUMBER           => '20'                        ),
-                'Dimensions'      => array( AmazonDynamoDB::TYPE_STRING           => '8.5 x 11.0 x 0.8'          ),
-                'PageCount'       => array( AmazonDynamoDB::TYPE_NUMBER           => '600'                       ),
-                'InPublication'   => array( AmazonDynamoDB::TYPE_NUMBER           => '1'                         ),
-                'ProductCategory' => array( AmazonDynamoDB::TYPE_STRING           => 'Book'                      )
+                'Id' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '102'
+                ),
+                'Title' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Book 102 Title'
+                ),
+                'ISBN' => array(
+                    AmazonDynamoDB::TYPE_STRING => '222-2222222222'
+                ),
+                'Authors' => array(
+                    AmazonDynamoDB::TYPE_ARRAY_OF_STRINGS => array('Author1', 'Author2')
+                ),
+                'Price' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '20'
+                ),
+                'Dimensions' => array(
+                    AmazonDynamoDB::TYPE_STRING => '8.5 x 11.0 x 0.8'
+                ),
+                'PageCount' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '600'
+                ),
+                'InPublication' => array(
+                    AmazonDynamoDB::TYPE_NUMBER => '1'
+                ),
+                'ProductCategory' => array(
+                    AmazonDynamoDB::TYPE_STRING => 'Book'
+                )
             )
         ));
         

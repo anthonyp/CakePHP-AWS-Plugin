@@ -163,6 +163,9 @@ class DynamoDBSource extends DataSource {
      * @since 0.1
      */
     public function listSources() {
+        if (!$this->connected) {
+            return false;
+        }
         return $this->connection
                 ->list_tables()
                 ->body
@@ -193,11 +196,9 @@ class DynamoDBSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
-        
         if (empty($model->schema)) {
             trigger_error(__('Schema is not configured in the model.', true));
         }
-        
         $options = array(
             'TableName' => $model->table
         );
@@ -205,17 +206,13 @@ class DynamoDBSource extends DataSource {
             $model,
             $this->connection->describe_table($options)
         );
-        
         $model->primaryKeySchema = $response['KeySchema'];
-        
         if (array_keys($response['KeySchema']) == array('HashKeyElement', 'RangeKeyElement')) {
             $model->primaryKeyType = 'hashAndRange';
         } else {
             $model->primaryKeyType = 'hash';
         }
-        
         $model->primaryKey = $response['KeySchema']['HashKeyElement']['AttributeName'];
-        
         return $model->schema;
     }
     
@@ -291,8 +288,6 @@ class DynamoDBSource extends DataSource {
             case 'scan':
                 $results = $this->_readWithScan($model, $query);
                 break;
-            default:
-                return false;
         }
         if ($readType == 'get_item') {
             $results = $this->_parseItem($model, $results);
@@ -331,9 +326,6 @@ class DynamoDBSource extends DataSource {
         
         // is scan?
         return 'scan';
-        
-        
-        return false;
         
     }
     
@@ -396,7 +388,6 @@ class DynamoDBSource extends DataSource {
         }
         
         $r = $this->connection->query($options);
-        debug($r);
         
         return $r;
     }
@@ -426,10 +417,10 @@ class DynamoDBSource extends DataSource {
             if (!empty($conditions)) {
                 $options['ScanFilter'] = array();
                 foreach($conditions as $field=>$value) {
-                    $options['ScanFilter'][$field] = array(
-                        'ComparisonOperator' => $value['operator'],
-                        'AttributeValueList' => $value['value']
-                    );
+                    $options['ScanFilter'][$field]['ComparisonOperator'] = $value['operator'];
+                    if (!empty($value['value'])) {
+                        $options['ScanFilter'][$field]['AttributeValueList'] = $value['value'];
+                    }
                 }
             }
         }
@@ -440,7 +431,14 @@ class DynamoDBSource extends DataSource {
         
         $response = $this->connection->scan($options);
         if ($response->status != 200) {
-            trigger_error($response->body->message);
+            if (!empty($response->body->message)) {
+                $message = $response->body->message;
+            } elseif (!empty($response->body->Message)) {
+                $message = $response->body->Message;
+            } else {
+                $message = __('Unkown api error', true);
+            }
+            trigger_error($message);
         }
         //debug($response);
         return $response;
@@ -555,17 +553,43 @@ class DynamoDBSource extends DataSource {
                 'NOT_NULL'          => AmazonDynamoDB::CONDITION_NOT_NULL,
                 'CONTAINS'          => AmazonDynamoDB::CONDITION_CONTAINS,
                 'DOESNT_CONTAINS'   => AmazonDynamoDB::CONDITION_DOESNT_CONTAIN,
+                'BEGINS_WITH'       => AmazonDynamoDB::CONDITION_BEGINS_WITH,
                 'IN'                => AmazonDynamoDB::CONDITION_IN,
-                'BETWEEN'           => AmazonDynamoDB::CONDITION_BETWEEN,
-                'BEGINS_WITH'       => AmazonDynamoDB::CONDITION_BEGINS_WITH
+                'BETWEEN'           => AmazonDynamoDB::CONDITION_BETWEEN
             );
             if (!in_array($operator, array_keys($operators))) {
                 continue;
             }
             $conditions[$field] = array(
                 'operator' => $operators[$operator],
-                'value' => array($this->_setValueType($value))
+                'value' => $value
             );
+        }
+        foreach($conditions as $field=>$properties) {
+            if ($properties['operator'] == AmazonDynamoDB::CONDITION_NULL
+                or $properties['operator'] == AmazonDynamoDB::CONDITION_NOT_NULL)
+            {
+                unset($conditions[$field]['value']);
+            } elseif ($properties['operator'] == AmazonDynamoDB::CONDITION_CONTAINS
+                or $properties['operator'] == AmazonDynamoDB::CONDITION_DOESNT_CONTAIN
+                or $properties['operator'] == AmazonDynamoDB::CONDITION_IN
+                or $properties['operator'] == AmazonDynamoDB::CONDITION_BETWEEN)
+            {
+                if (is_array($properties['value'])) {
+                    $conditions[$field]['value'] = array();
+                    foreach($properties['value'] as $value) {
+                        $conditions[$field]['value'][] = $this->_setValueType($value);
+                    }
+                } else {
+                    $conditions[$field]['value'] = array(
+                        $this->_setValueType($properties['value'])
+                    );
+                }
+            } else {
+                $conditions[$field]['value'] = array(
+                    $this->_setValueType($properties['value'])
+                );
+            }
         }
         return $conditions;
     }
