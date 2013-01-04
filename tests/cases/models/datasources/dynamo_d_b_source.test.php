@@ -17,6 +17,7 @@
  * @license     http://www.opensource.org/licenses/mit-license.php The MIT License
  * @link        http://github.com/anthonyp/CakePHP-AWS-Plugin
  */
+App::import('Datasource', 'AWS.DynamoDBSource');
 
 /**
 * Post Model for the test
@@ -24,15 +25,15 @@
 * @package app
 * @subpackage app.model.post
 */
-App::import('Model', 'Post');
-
-class Post extends AppModel {
+class Post extends CakeTestModel {
     
     public $name = 'Post';
     
     public $useDbConfig = 'dynamodb_test';
     
     public $displayField = 'title';
+    
+    public $useTable = 'testPost';
     
     public $recursive = -1;
     
@@ -86,6 +87,76 @@ class Post extends AppModel {
     );
     
 }
+
+/**
+* Article Model for the test
+*
+* @package app
+* @subpackage app.model.article
+*/
+class Article extends CakeTestModel {
+    
+    public $name = 'Article';
+    
+    public $useDbConfig = 'dynamodb_test';
+    
+    public $displayField = 'title';
+    
+    public $useTable = 'testArticle';
+    
+    public $recursive = -1;
+    
+    public $validate = array(
+        'title' => array(
+            'notempty' => array(
+                'rule' => array('notempty'),
+                //'message' => 'Your custom message here',
+                //'allowEmpty' => false,
+                //'required' => false,
+                //'last' => false, // Stop validation after this rule
+                //'on' => 'create', // Limit validation to 'create' or 'update' operations
+            ),
+        ),
+    );
+    
+    public $schema = array(
+        'id' => array(
+            'type' => 'string',
+            'null' => true,
+            'key' => 'primary',
+            'length' => 32,
+        ),
+        'rev' => array(
+            'type' => 'string',
+            'null' => true,
+            'length' => 34,
+        ),
+        'reads' => array(
+            'type' => 'string',
+            'null' => true,
+            'length' => 34,
+        ),
+        'title' => array(
+            'type' => 'string',
+            'null' => true,
+            'length' => 255,
+        ),
+        'description' => array(
+            'type' => 'string',
+            'null' => true,
+        ),
+        'tags' => array(
+            'type' => 'set',
+            'null' => true,
+        ),
+        'category' => array(
+            'type' => 'string',
+            'null' => true,
+        )
+    );
+    
+}
+
 
 /**
  * DynamoDBTestCase
@@ -219,7 +290,6 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function startTest() {
         
-        // set variables for dates
         $this->one_day_ago = date('Y-m-d H:i:s', strtotime("-1 days"));
         $this->seven_days_ago = date('Y-m-d H:i:s', strtotime("-7 days"));
         $this->fourteen_days_ago = date('Y-m-d H:i:s', strtotime("-14 days"));
@@ -231,25 +301,27 @@ class DynamoDBTestCase extends CakeTestCase {
             $this->config = $config->dynamodb_test;
         }
         
-        if (empty($this->Post)) {
-            ConnectionManager::create('dynamodb_test', $this->config);
-            $this->Post = ClassRegistry::init('Post');
-        }
-        
         if (empty($this->DynamoDB)) {
             $this->DynamoDB = new DynamoDBSource($this->config);
-            $this->DynamoDB =& ConnectionManager::getDataSource($this->Post->useDbConfig);
         }
         
-        if (!$this->created_test_tables && $this->create_test_tables) {
+        if ($this->create_test_tables && !$this->created_test_tables) {
             $this->assertTrue($this->_removeTestTables());
             $this->assertTrue($this->_createTestTables());
             $this->created_test_tables = true;
         }
         
-        if (!$this->created_test_data && $this->create_test_data) {
+        if ($this->create_test_data && !$this->created_test_data) {
             $this->assertTrue($this->_createTestData());
             $this->created_test_data = true;
+        }
+        
+        if (empty($this->Post)) {
+            $this->Post = ClassRegistry::init('Post');
+        }
+        
+        if (empty($this->Article)) {
+            $this->Article = ClassRegistry::init('Article');
         }
         
     }
@@ -282,6 +354,15 @@ class DynamoDBTestCase extends CakeTestCase {
         
     }
     
+    //@todo
+    public function testListSources() {
+        
+        $this->DynamoDB->connected = false;
+        $this->assertFalse($this->DynamoDB->listSources($this->Post));
+        $this->DynamoDB->connected = true;
+        
+    }
+    
     /**
      * Test calculate
      *
@@ -295,6 +376,7 @@ class DynamoDBTestCase extends CakeTestCase {
     /**
      * Test describe
      *
+     * @todo
      */
     public function testDescribe() {
         
@@ -324,7 +406,8 @@ class DynamoDBTestCase extends CakeTestCase {
                 'description' => 'Description for '. $postTitle
             )
         );
-        $this->assertTrue($this->Post->save($data));
+        $result = $this->Post->save($data);
+        $this->assertTrue($result);
         
         $result = $this->Post->read(null, $postId);
         $this->assertEqual(
@@ -2808,6 +2891,28 @@ class DynamoDBTestCase extends CakeTestCase {
      */
     public function _removeTestTables() {
         
+        $tableName = 'testPost';
+        $options = array(
+            'TableName' => $tableName
+        );
+        $response = $this->DynamoDB->query('delete_table', array($options));
+        do {
+            sleep(1);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus == 'DELETING');
+        
+        $tableName = 'testArticle';
+        $options = array(
+            'TableName' => $tableName
+        );
+        $response = $this->DynamoDB->query('delete_table', array($options));
+        do {
+            sleep(1);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus == 'DELETING');
+        
         $tableName = 'testProductCatalog';
         $options = array(
             'TableName' => $tableName
@@ -2862,6 +2967,58 @@ class DynamoDBTestCase extends CakeTestCase {
      * @todo add posts tables for tests
      */
     public function _createTestTables() {
+        
+        $tableName = 'testPost';
+        $options = array(
+            'TableName' => $tableName,
+            'KeySchema' => array(
+                'HashKeyElement' => array(
+                    'AttributeName' => 'id',
+                    'AttributeType' => AmazonDynamoDB::TYPE_STRING
+                )
+            ),
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => 50,
+                'WriteCapacityUnits' => 25
+            )
+        );
+        $response = $this->DynamoDB->query('create_table', array($options));
+        $this->assertEqual($response->status, 200);
+        // wait until table is active
+        do {
+            sleep(1);
+            $options = array('TableName' => $tableName);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus !== 'ACTIVE');
+        
+        $tableName = 'testArticle';
+        $options = array(
+            'TableName' => $tableName,
+            'KeySchema' => array(
+                'HashKeyElement' => array(
+                    'AttributeName' => 'id',
+                    'AttributeType' => AmazonDynamoDB::TYPE_STRING
+                ),
+                'RangeKeyElement' => array(
+                    'AttributeName' => 'title',
+                    'AttributeType' => AmazonDynamoDB::TYPE_STRING
+                )
+            ),
+            'ProvisionedThroughput' => array(
+                'ReadCapacityUnits' => 50,
+                'WriteCapacityUnits' => 25
+            )
+        );
+        $response = $this->DynamoDB->query('create_table', array($options));
+        $this->assertEqual($response->status, 200);
+        // wait until table is active
+        do {
+            sleep(1);
+            $options = array('TableName' => $tableName);
+            $response = $this->DynamoDB->query('describe_table', array($options));
+        }
+        while ((string)$response->body->Table->TableStatus !== 'ACTIVE');
         
         $tableName = 'testProductCatalog';
         $options = array(
