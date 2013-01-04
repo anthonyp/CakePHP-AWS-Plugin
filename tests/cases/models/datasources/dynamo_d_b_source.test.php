@@ -70,6 +70,7 @@ class Post extends CakeTestModel {
         'title' => array(
             'type' => 'string',
             'null' => true,
+            'key' => 'primary',
             'length' => 255,
         ),
         'description' => array(
@@ -301,6 +302,8 @@ class DynamoDBTestCase extends CakeTestCase {
             $this->config = $config->dynamodb_test;
         }
         
+        ConnectionManager::create('dynamodb_test', $this->config);
+        
         if (empty($this->DynamoDB)) {
             $this->DynamoDB = new DynamoDBSource($this->config);
         }
@@ -324,6 +327,44 @@ class DynamoDBTestCase extends CakeTestCase {
             $this->Article = ClassRegistry::init('Article');
         }
         
+        
+    }
+    
+    /**
+     * Test find conditions and options for query
+     *
+     */
+    public function testFindQueryEqual() {
+        
+        $articleId = uniqid();
+        $articleTitle = 'Article #'. $articleId;
+        $data = array(
+            'Article' => array(
+                'id' => $articleId,
+                'rev' => (string)rand(1,9),
+                'title' => $articleTitle,
+                'description' => 'Description for '. $articleTitle
+            )
+        );
+        $this->Article->create();
+        $result = $this->Article->save($data);
+        $this->assertTrue($result);
+        
+        $expected = array($data);
+        $result = $this->Article->find('all', array(
+            'conditions' => array(
+                'Article.title' => $articleTitle
+            )
+        ));
+        $this->assertEqual($result, $expected);
+        
+        $expected = array($data);
+        $result = $this->Article->find('all', array(
+            'conditions' => array(
+                'Article.title =' => $articleTitle
+            )
+        ));
+        $this->assertEqual($result, $expected);
     }
     
     /**
@@ -804,14 +845,16 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertEqual($result, $expected);
     }
     
+    
+    
     /**
-     * Find conditions
+     * Test find conditions and options for scan
      *
      */
     public function testFindScanEqual() {
         
         $postId = uniqid();
-        $postTitle = 'Post #'. rand();
+        $postTitle = 'Post #'. $postId;
         $data = array(
             'Post' => array(
                 'id' => $postId,
@@ -837,6 +880,8 @@ class DynamoDBTestCase extends CakeTestCase {
             )
         ));
         $this->assertEqual($result, $expected);
+        
+        $this->assertTrue($this->Post->delete($postId));
         
     }
     
@@ -975,7 +1020,7 @@ class DynamoDBTestCase extends CakeTestCase {
     public function testFindScanNull() {
         
         $postId = uniqid();
-        $postRev = null;
+        $postRev = '';
         $postTitle = 'Post #'. $postRev;
         $data = array(
             'Post' => array(

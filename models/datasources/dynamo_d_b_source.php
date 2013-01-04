@@ -294,7 +294,11 @@ class DynamoDBSource extends DataSource {
         } else {
             $results = $this->_parseItems($model, $results);
         }
+        if (empty($results)) {
+            return false;
+        }
         if ($model->findQueryType == 'count') {
+            // this is bad!
             return array('0'=>array('0'=>array('count'=>count($results))));
         }
         if ($model->findQueryType == 'list') {
@@ -324,7 +328,7 @@ class DynamoDBSource extends DataSource {
         
         
         
-        // is scan?
+        // scan!
         return 'scan';
         
     }
@@ -347,11 +351,14 @@ class DynamoDBSource extends DataSource {
             'Key' => array('HashKeyElement'=>$this->_setValueType($value)),
         );
         
-        return $this->connection->get_item($options);
+        $results = $this->connection->get_item($options);
+        return $results;
         
     }
     
     public function _readWithQuery(&$model, $query = array()) {
+        
+        die(__FUNCTION__);
         
         extract($query);
         
