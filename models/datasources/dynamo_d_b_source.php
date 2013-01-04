@@ -732,13 +732,13 @@ class DynamoDBSource extends DataSource {
                 }
                 break;
             case 'object':
-                trigger_error('var type (object) not supported');
+                trigger_error(__('var type (object) not supported', true));
                 break;
             case 'NULL':
                 $value = array(AmazonDynamoDB::TYPE_STRING => '');
                 break;
             default:
-                trigger_error('var type not supported');
+                trigger_error(__('var type not supported', true));
         }
         return $value;
     }
