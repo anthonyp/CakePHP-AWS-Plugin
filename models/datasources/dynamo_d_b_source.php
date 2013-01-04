@@ -246,7 +246,7 @@ class DynamoDBSource extends DataSource {
         } else {
             $data = $model->data;
         }
-        $data = $this->_setVarTypes($data);
+        $data = $this->_setValueTypes($data);
         if (empty($data[$model->primaryKey])) {
             $data[$model->primaryKey] = array_shift($this->_setHashPrimaryKey($model));
         }
@@ -294,7 +294,7 @@ class DynamoDBSource extends DataSource {
             );
             $options = array(
                 'TableName' => $model->table,
-                'Key' => array('HashKeyElement'=>$this->_setVarType($value)),
+                'Key' => array('HashKeyElement'=>$this->_setValueType($value)),
             );
             $response = $this->connection->get_item($options);
             $results = $this->_parseItem($model, $response);
@@ -676,7 +676,7 @@ class DynamoDBSource extends DataSource {
         foreach($data as $key=>$value) {
             $attributes[$key] = array(
                 'Action' => AmazonDynamoDB::ACTION_PUT,
-                'Value' => $this->_setVarType($value)
+                'Value' => $this->_setValueType($value)
             );
         }
         return $attributes;
@@ -689,9 +689,9 @@ class DynamoDBSource extends DataSource {
      * @return array An array of values with data types set.
      * @since 0.1
      */
-    public function _setVarTypes($data = array()) {
+    public function _setValueTypes($data = array()) {
         foreach($data as $key=>$value) {
-            $data[$key] = $this->_setVarType($value);
+            $data[$key] = $this->_setValueType($value);
         }
         return $data;
     }
@@ -704,7 +704,7 @@ class DynamoDBSource extends DataSource {
      * @return array An array with key as the DynanoDB data type and value.
      * @since 0.1
      */
-    public function _setVarType($value = null) {
+    public function _setValueType($value = null) {
         switch(gettype($value)) {
             case 'boolean':
                 $value = array(AmazonDynamoDB::TYPE_STRING => (string)$value);

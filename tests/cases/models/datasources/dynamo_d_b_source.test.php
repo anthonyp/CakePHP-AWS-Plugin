@@ -2178,15 +2178,15 @@ class DynamoDBTestCase extends CakeTestCase {
         $expected = array(
             'rev' => array(
                 'Action' => 'PUT',
-                'Value' => $this->DynamoDB->_setVarType($data['rev'])
+                'Value' => $this->DynamoDB->_setValueType($data['rev'])
             ),
             'title' => array(
                 'Action' => 'PUT',
-                'Value' => $this->DynamoDB->_setVarType($data['title'])
+                'Value' => $this->DynamoDB->_setValueType($data['title'])
             ),
             'text' => array(
                 'Action' => 'PUT',
-                'Value' => $this->DynamoDB->_setVarType($data['text'])
+                'Value' => $this->DynamoDB->_setValueType($data['text'])
             )
         );
         $result = $this->DynamoDB->_setAttributeUpdates($this->Post, $data);
@@ -2195,10 +2195,10 @@ class DynamoDBTestCase extends CakeTestCase {
     }
     
     /**
-     * Test setVarTypes
+     * Test setValueTypes
      *
      */
-    public function testSetVarTypes() {
+    public function testSetValueTypes() {
         
         $data = array(
             'key1' => true,
@@ -2210,60 +2210,60 @@ class DynamoDBTestCase extends CakeTestCase {
             'key2' => array(AmazonDynamoDB::TYPE_NUMBER => (string)$data['key2']),
             'key3' => array(AmazonDynamoDB::TYPE_STRING => (string)$data['key3'])
         );
-        $result = $this->DynamoDB->_setVarTypes($data);
+        $result = $this->DynamoDB->_setValueTypes($data);
         $this->assertEqual($result, $expected);
         
     }
     
     /**
-     * Test _setVarType
+     * Test _setValueType
      *
      */
-    public function testSetVarType() {
+    public function testSetValueType() {
         
         $value = true;
         $expected = array(AmazonDynamoDB::TYPE_STRING => (string)$value);
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         $value = 1;
         $expected = array(AmazonDynamoDB::TYPE_NUMBER => (string)$value);
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         $value = (double)1.23456789;
         $expected = array(AmazonDynamoDB::TYPE_NUMBER => (string)$value);
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         $value = 'amazon';
         $expected = array(AmazonDynamoDB::TYPE_STRING => (string)$value);
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         $value = array('one','two','three','four','five');
         $expected = array(AmazonDynamoDB::TYPE_STRING_SET => $value);
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         $value = array(1,2,3,4,5);
         $expected = array(AmazonDynamoDB::TYPE_NUMBER_SET => $value);
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         $value = new stdClass();
         $this->expectError('var type (object) not supported');
-        $this->DynamoDB->_setVarType($value);
+        $this->DynamoDB->_setValueType($value);
         
         $value = NULL;
         $expected = array(AmazonDynamoDB::TYPE_STRING => '');
-        $result = $this->DynamoDB->_setVarType($value);
+        $result = $this->DynamoDB->_setValueType($value);
         $this->assertEqual($result, $expected);
         
         // test a resource type var
         $value = $handle = fopen(CACHE."file.txt", "w+");
         $this->expectError('var type not supported');
-        $this->DynamoDB->_setVarType($value);
+        $this->DynamoDB->_setValueType($value);
     }
     
     /**
