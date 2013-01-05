@@ -411,12 +411,7 @@ class DynamoDBSource extends DataSource {
             }
         }
         
-        // is query?
-        if ($model->primaryKeyType == 'hashAndRange') {
-            debug('_getReadType:query');
-            die;
-        }
-        
+        // is query? working on that one
         
         // scan!
         return 'scan';
@@ -464,8 +459,6 @@ class DynamoDBSource extends DataSource {
      * @since 0.1
      */
     public function _readWithQuery(&$model, $query = array()) {
-        
-        die(__FUNCTION__);
         
         extract($query);
         
