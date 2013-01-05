@@ -310,147 +310,6 @@ class DynamoDBSource extends DataSource {
         return $results;
     }
     
-    public function _getReadType(&$model, $query = array()) {
-        
-        extract($query);
-        
-        // get_item?
-        if (!empty($conditions) && count($conditions)==1) {
-            if (!empty($conditions[$model->alias .'.'. $model->primaryKey])) {
-                return 'get_item';
-            }
-            if (!empty($conditions[$model->primaryKey])) {
-                return 'get_item';
-            }
-        }
-        
-        // is query?
-        
-        
-        
-        // scan!
-        return 'scan';
-        
-    }
-    
-    public function _readWithGetItem(&$model, $query = array()) {
-        
-        extract($query);
-        
-        if (empty($conditions[$model->alias .'.'. $model->primaryKey])) {
-            $value = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
-        } else {
-            $value = $conditions[$model->alias .'.'. $model->primaryKey];
-        }
-        $value = $this->_castValue(
-            $model->primaryKeySchema['HashKeyElement']['AttributeType'],
-            $value
-        );
-        $options = array(
-            'TableName' => $model->table,
-            'Key' => array('HashKeyElement'=>$this->_setValueType($value)),
-        );
-        
-        $results = $this->connection->get_item($options);
-        return $results;
-        
-    }
-    
-    public function _readWithQuery(&$model, $query = array()) {
-        
-        die(__FUNCTION__);
-        
-        extract($query);
-        
-        $options = array(
-            'TableName' => $model->table
-        );
-        
-        if (!empty($fields)) {
-            $options['AttributesToGet'] = $fields;
-        }
-        
-        if (!empty($limit)) {
-            $options['Limit'] = $limit;
-        }
-        
-        if (!empty($consistentRead)) {
-            $options['ConsistentRead'] = $consistentRead;
-        }
-        
-        if (!empty($count)) {
-            $options['Count'] = $count;
-        }
-        
-        $options['HashKeyValue'] = array();
-        
-        $options['RangeKeyCondition'] = array();
-        
-        if (!empty($scanIndexForward)) {
-            $options['ScanIndexForward'] = $scanIndexForward;
-        }
-        
-        if (!empty($exclusiveStartKey)) {
-            $options['ExclusiveStartKey'] = $exclusiveStartKey;
-        }
-        
-        $r = $this->connection->query($options);
-        
-        return $r;
-    }
-    
-    public function _readWithScan(&$model, $query = array()) {
-        
-        extract($query);
-        
-        $options = array(
-            'TableName' => $model->table
-        );
-        
-        if (!empty($fields)) {
-            $options['AttributesToGet'] = $fields;
-        }
-        
-        if (!empty($limit)) {
-            $options['Limit'] = $limit;
-        }
-        
-        if (!empty($count)) {
-            $options['Count'] = $count;
-        }
-        
-        if (!empty($conditions)) {
-            $conditions = $this->_getConditions($model, $conditions);
-            if (!empty($conditions)) {
-                $options['ScanFilter'] = array();
-                foreach($conditions as $field=>$value) {
-                    $options['ScanFilter'][$field]['ComparisonOperator'] = $value['operator'];
-                    if (!empty($value['value'])) {
-                        $options['ScanFilter'][$field]['AttributeValueList'] = $value['value'];
-                    }
-                }
-            }
-        }
-        
-        if (!empty($exclusiveStartKey)) {
-            $options['ExclusiveStartKey'] = $exclusiveStartKey;
-        }
-        
-        $response = $this->connection->scan($options);
-        if ($response->status != 200) {
-            if (!empty($response->body->message)) {
-                $message = $response->body->message;
-            } elseif (!empty($response->body->Message)) {
-                $message = $response->body->Message;
-            } else {
-                $message = __('Unkown api error', true);
-            }
-            trigger_error($message);
-        }
-        //debug($response);
-        return $response;
-    }
-    
     /**
      * The "U" in CRUD
      *
@@ -529,6 +388,193 @@ class DynamoDBSource extends DataSource {
         return $this->connection->query($args[0]);
     }
     
+    /**
+     * Returns the read type
+     *
+     * @param object $model A Model object that the query is for.
+     * @param array $query An array of queryData information containing 
+     *        keys similar to Model::find().
+     * @return string Returns string with query type.
+     * @since 0.1
+     */
+    public function _getReadType(&$model, $query = array()) {
+        
+        extract($query);
+        
+        // get_item?
+        if (!empty($conditions) && count($conditions)==1) {
+            if (!empty($conditions[$model->alias .'.'. $model->primaryKey])) {
+                return 'get_item';
+            }
+            if (!empty($conditions[$model->primaryKey])) {
+                return 'get_item';
+            }
+        }
+        
+        // is query?
+        if ($model->primaryKeyType == 'hashAndRange') {
+            debug('_getReadType:query');
+            die;
+        }
+        
+        
+        // scan!
+        return 'scan';
+        
+    }
+    
+    /**
+     * Pull a record from database with 'get_item' call
+     *
+     * @param object $model A Model object that the query is for.
+     * @param array $query An array of queryData information containing 
+     *        keys similar to Model::find().
+     * @return object Returns DynamoDB results object.
+     * @since 0.1
+     */
+    public function _readWithGetItem(&$model, $query = array()) {
+        
+        extract($query);
+        
+        if (empty($conditions[$model->alias .'.'. $model->primaryKey])) {
+            $value = $this->_getPrimaryKeyValue($model->{$model->primaryKey});
+        } else {
+            $value = $conditions[$model->alias .'.'. $model->primaryKey];
+        }
+        $value = $this->_castValue(
+            $model->primaryKeySchema['HashKeyElement']['AttributeType'],
+            $value
+        );
+        $options = array(
+            'TableName' => $model->table,
+            'Key' => array('HashKeyElement'=>$this->_setValueType($value)),
+        );
+        
+        return $this->connection->get_item($options);
+        
+    }
+    
+    /**
+     * Pull record(s) from database with 'query' call
+     *
+     * @param object $model A Model object that the query is for.
+     * @param array $query An array of queryData information containing 
+     *        keys similar to Model::find().
+     * @return object Returns DynamoDB results object.
+     * @since 0.1
+     */
+    public function _readWithQuery(&$model, $query = array()) {
+        
+        die(__FUNCTION__);
+        
+        extract($query);
+        
+        $options = array(
+            'TableName' => $model->table
+        );
+        
+        if (!empty($fields)) {
+            $options['AttributesToGet'] = $fields;
+        }
+        
+        if (!empty($limit)) {
+            $options['Limit'] = $limit;
+        }
+        
+        if (!empty($consistentRead)) {
+            $options['ConsistentRead'] = $consistentRead;
+        }
+        
+        if (!empty($count)) {
+            $options['Count'] = $count;
+        }
+        
+        $options['HashKeyValue'] = array();
+        
+        $options['RangeKeyCondition'] = array();
+        
+        if (!empty($scanIndexForward)) {
+            $options['ScanIndexForward'] = $scanIndexForward;
+        }
+        
+        if (!empty($exclusiveStartKey)) {
+            $options['ExclusiveStartKey'] = $exclusiveStartKey;
+        }
+        
+        $r = $this->connection->query($options);
+        
+        return $r;
+    }
+    
+    /**
+     * Pull record(s) from database with 'scan' call
+     *
+     * @param object $model A Model object that the query is for.
+     * @param array $query An array of queryData information containing 
+     *        keys similar to Model::find().
+     * @return object Returns DynamoDB results object.
+     * @since 0.1
+     */
+    public function _readWithScan(&$model, $query = array()) {
+        
+        extract($query);
+        
+        $options = array(
+            'TableName' => $model->table
+        );
+        
+        if (!empty($fields)) {
+            $options['AttributesToGet'] = $fields;
+        }
+        
+        if (!empty($limit)) {
+            $options['Limit'] = $limit;
+        }
+        
+        if (!empty($count)) {
+            $options['Count'] = $count;
+        }
+        
+        if (!empty($conditions)) {
+            $conditions = $this->_getConditions($model, $conditions);
+            if (!empty($conditions)) {
+                $options['ScanFilter'] = array();
+                foreach($conditions as $field=>$value) {
+                    $options['ScanFilter'][$field]['ComparisonOperator'] = $value['operator'];
+                    if (!empty($value['value'])) {
+                        $options['ScanFilter'][$field]['AttributeValueList'] = $value['value'];
+                    }
+                }
+            }
+        }
+        
+        if (!empty($exclusiveStartKey)) {
+            $options['ExclusiveStartKey'] = $exclusiveStartKey;
+        }
+        
+        $response = $this->connection->scan($options);
+        if ($response->status != 200) {
+            if (!empty($response->body->message)) {
+                $message = $response->body->message;
+            } elseif (!empty($response->body->Message)) {
+                $message = $response->body->Message;
+            } else {
+                $message = __('Unkown api error', true);
+            }
+            trigger_error($message);
+        }
+        //debug($response);
+        return $response;
+    }
+    
+    /**
+     * Translate a conditions array to DynamoDB format
+     *
+     * @param object $model A Model object that the query is for.
+     * @param array $conditions Array with conditions.
+     * @return array Returns converted array to DynamoDB format of conditions.
+     * @since 0.1
+     */
     public function _getConditions(&$model, $conditions = array()) {
         if (empty($conditions)) {
             return array();
