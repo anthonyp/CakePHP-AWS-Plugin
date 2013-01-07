@@ -327,44 +327,6 @@ class DynamoDBTestCase extends CakeTestCase {
             $this->Article = ClassRegistry::init('Article');
         }
         
-        
-    }
-    
-    /**
-     * Test find conditions and options for query
-     *
-     */
-    public function testFindQueryEqual() {
-        
-        $articleId = uniqid();
-        $articleTitle = 'Article #'. $articleId;
-        $data = array(
-            'Article' => array(
-                'id' => $articleId,
-                'rev' => (string)rand(1,9),
-                'title' => $articleTitle,
-                'description' => 'Description for '. $articleTitle
-            )
-        );
-        $this->Article->create();
-        $result = $this->Article->save($data);
-        $this->assertTrue($result);
-        
-        $expected = array($data);
-        $result = $this->Article->find('all', array(
-            'conditions' => array(
-                'Article.title' => $articleTitle
-            )
-        ));
-        $this->assertEqual($result, $expected);
-        
-        $expected = array($data);
-        $result = $this->Article->find('all', array(
-            'conditions' => array(
-                'Article.title =' => $articleTitle
-            )
-        ));
-        $this->assertEqual($result, $expected);
     }
     
     /**
@@ -845,7 +807,40 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertEqual($result, $expected);
     }
     
-    
+    /**
+     * Test find conditions and options for query
+     *
+     */
+    public function testFindQueryEqual() {
+        
+        $articleId = uniqid();
+        $articleTitle = 'Article #'. $articleId;
+        $data = array(
+            'Article' => array(
+                'id' => $articleId,
+                'rev' => (string)rand(1,9),
+                'title' => $articleTitle,
+                'description' => 'Description for '. $articleTitle
+            )
+        );
+        $result = $this->Article->save($data);
+        $this->assertTrue($result);
+        
+        $expected = array($data);
+        $result = $this->Article->find('all', array(
+            'conditions' => array(
+                'Article.id' => $articleId,
+                'Article.title' => $articleTitle
+            )
+        ));
+        $this->assertEqual($result, $expected);
+        
+        $options = array($articleId, $articleTitle);
+        
+        $this->assertTrue($this->Article->delete($options));
+        
+        
+    }
     
     /**
      * Test find conditions and options for scan
@@ -1020,7 +1015,7 @@ class DynamoDBTestCase extends CakeTestCase {
     public function testFindScanNull() {
         
         $postId = uniqid();
-        $postRev = '';
+        $postRev = ' ';
         $postTitle = 'Post #'. $postRev;
         $data = array(
             'Post' => array(

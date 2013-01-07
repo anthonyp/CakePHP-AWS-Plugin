@@ -67,7 +67,6 @@ class DynamoDBSource extends DataSource {
     public function __construct($config = array(), $autoConnect = true) {
         $this->setConfig($config);
         parent::__construct($config);
-        $this->fullDebug = Configure::read() > 1;
         if ($autoConnect) {
             return $this->connect();
         }
@@ -356,11 +355,22 @@ class DynamoDBSource extends DataSource {
             return false;
         }
         $options = array(
-            'TableName' => $model->table,
-            'Key' => $this->_setHashPrimaryKey($model, $conditions)
+            'TableName' => $model->table
         );
+        $conditions = array_shift($conditions);
+        if (is_array($conditions)) {
+            $options['Key'] = array(
+                'HashKeyElement' => $this->_setValueType($conditions[0]),
+                'RangeKeyElement' => $this->_setValueType($conditions[1])
+            );
+        } else {
+            $options['Key'] = array(
+                'HashKeyElement' => $this->_setValueType($conditions[0])
+            );
+        }
         return $this->connection->delete_item($options);
     }
+    
     
     /**
      * Wraps Amazon DynamoDB SDK API methods
@@ -399,7 +409,7 @@ class DynamoDBSource extends DataSource {
         extract($query);
         
         // get_item?
-        if (!empty($conditions) && count($conditions)==1) {
+        if ($model->primaryKeyType == 'hash' && !empty($conditions) && count($conditions)==1) {
             if (!empty($conditions[$model->alias .'.'. $model->primaryKey])) {
                 return 'get_item';
             }
@@ -408,7 +418,27 @@ class DynamoDBSource extends DataSource {
             }
         }
         
-        // is query? working on that one
+        // is query?
+        if ($model->primaryKeyType == 'hashAndRange' && !empty($conditions) && count($conditions)>0) {
+            $hasHashKeyElement = false;
+            $hasRangeKeyElement = false;
+            foreach($conditions as $field=>$value) {
+                unset($conditions[$field]);
+                $field = array_pop(explode('.', $field));
+                if (strpos($field, ' ') !== false) {
+                    list($field, $operator) = explode(' ', $field);
+                }
+                if ($field == $model->primaryKeySchema['HashKeyElement']['AttributeName']) {
+                    $hasHashKeyElement = true;
+                }
+                if ($field == $model->primaryKeySchema['RangeKeyElement']['AttributeName']) {
+                    $hasRangeKeyElement = true;
+                }
+            }
+            if ($hasHashKeyElement && $hasRangeKeyElement) {
+                return 'query';
+            }
+        }
         
         // scan!
         return 'scan';
@@ -443,7 +473,6 @@ class DynamoDBSource extends DataSource {
         );
         
         return $this->connection->get_item($options);
-        
     }
     
     /**
@@ -463,7 +492,7 @@ class DynamoDBSource extends DataSource {
             'TableName' => $model->table
         );
         
-        if (!empty($fields)) {
+        if (!empty($fields) && is_array($fields)) {
             $options['AttributesToGet'] = $fields;
         }
         
@@ -479,9 +508,20 @@ class DynamoDBSource extends DataSource {
             $options['Count'] = $count;
         }
         
-        $options['HashKeyValue'] = array();
-        
-        $options['RangeKeyCondition'] = array();
+        $conditions = $this->_getConditions($model, $conditions);
+        if (!empty($conditions)) {
+            foreach($conditions as $field=>$value) {
+                if ($field == $model->primaryKeySchema['HashKeyElement']['AttributeName']) {
+                    $options['HashKeyValue'] = array_shift($value['value']);
+                }
+                if ($field == $model->primaryKeySchema['RangeKeyElement']['AttributeName']) {
+                    $options['RangeKeyCondition'] = array(
+                        'ComparisonOperator' => $value['operator'],
+                        'AttributeValueList' => $value['value']
+                    );
+                }
+            }
+        }
         
         if (!empty($scanIndexForward)) {
             $options['ScanIndexForward'] = $scanIndexForward;
@@ -491,9 +531,8 @@ class DynamoDBSource extends DataSource {
             $options['ExclusiveStartKey'] = $exclusiveStartKey;
         }
         
-        $r = $this->connection->query($options);
+        return $this->connection->query($options);
         
-        return $r;
     }
     
     /**
@@ -513,7 +552,7 @@ class DynamoDBSource extends DataSource {
             'TableName' => $model->table
         );
         
-        if (!empty($fields)) {
+        if (!empty($fields) && is_array($fields)) {
             $options['AttributesToGet'] = $fields;
         }
         
@@ -535,6 +574,8 @@ class DynamoDBSource extends DataSource {
                         $options['ScanFilter'][$field]['AttributeValueList'] = $value['value'];
                     }
                 }
+            } else {
+                return false;
             }
         }
         
@@ -549,11 +590,10 @@ class DynamoDBSource extends DataSource {
             } elseif (!empty($response->body->Message)) {
                 $message = $response->body->Message;
             } else {
-                $message = __('Unkown api error', true);
+                $message = __('Unknown API error', true);
             }
             trigger_error($message);
         }
-        //debug($response);
         return $response;
     }
     
