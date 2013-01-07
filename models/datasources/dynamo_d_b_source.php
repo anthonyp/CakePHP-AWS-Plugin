@@ -150,9 +150,6 @@ class DynamoDBSource extends DataSource {
      * @since 0.1
      */
     public function close() {
-        // if (Configure::read('debug') > 1) {
-        //     $this->showLog();
-        // }
         return $this->disconnect();
     }
     
@@ -993,25 +990,6 @@ class DynamoDBSource extends DataSource {
                 trigger_error(__('var type not supported', true));
         }
         return $value;
-    }
-    
-    /**
-     * Prepare log query.
-     *
-     * @param object $model Model object.
-     * @return boolean Success.
-     * @since 0.1
-     */
-    public function _prepareLogQuery(&$model) {
-        if (!$this->fullDebug) {
-            return false;
-        }
-        $this->_startTime = microtime(true);
-        $this->took = null;
-        $this->affected = null;
-        $this->error = null;
-        $this->numRows = null;
-        return true;
     }
     
 }

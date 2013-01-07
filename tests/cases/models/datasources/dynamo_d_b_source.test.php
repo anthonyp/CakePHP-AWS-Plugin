@@ -2913,24 +2913,6 @@ class DynamoDBTestCase extends CakeTestCase {
     }
     
     /**
-     * Test _prepareLogQuery
-     *
-     */
-    public function testPrepareLogQuery() {
-        
-        $this->DynamoDB->fullDebug = false;
-        $this->assertFalse($this->DynamoDB->_prepareLogQuery($this->Post));
-        
-        $this->DynamoDB->fullDebug = true;
-        $this->DynamoDB->_prepareLogQuery($this->Post);
-        $this->assertNotNull($this->DynamoDB->_startTime);
-        $this->assertNull($this->DynamoDB->took);
-        $this->assertNull($this->DynamoDB->affected);
-        $this->assertNull($this->DynamoDB->error);
-        $this->assertNull($this->DynamoDB->numRows);
-    }
-    
-    /**
      * Removes test tables
      *
      */
