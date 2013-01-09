@@ -202,7 +202,6 @@ class DynamoDBSource extends DataSource {
         $options = array(
             'TableName' => $model->table
         );
-        $t = $this->connection->describe_table($options);
         $response = $this->_parseTable(
             $model,
             $this->connection->describe_table($options)
@@ -244,17 +243,23 @@ class DynamoDBSource extends DataSource {
         } else {
             $data = $model->data;
         }
-        $data = $this->_setValueTypes($data);
-        if (empty($data[$model->primaryKey])) {
-            $data[$model->primaryKey] = array_shift($this->_setHashPrimaryKey($model));
+        if (empty($data[$model->alias]) && empty($data[$model->primaryKey])) {
+            $data[$model->primaryKey] = array_shift($this->_setHashPrimaryKey($model, $data));
+        } else {
+            $data[$model->alias][$model->primaryKey] = array_shift($this->_setHashPrimaryKey($model, $data));
         }
         $options = array(
             'TableName' => $model->table,
-            'Item' => $data
+            'Item' => $this->_setValueTypes($data)
         );
         $response = $this->connection->put_item($options);
         if (!empty($response) && $response->status == 200) {
-            $mode->id = $model->__insertID = $this->_getPrimaryKeyValue($data[$model->primaryKey]);
+            if (empty($data[$model->alias])) {
+                $id = $this->_getPrimaryKeyValue($data[$model->primaryKey]);
+            } else {
+                $id = $this->_getPrimaryKeyValue($data[$model->alias][$model->primaryKey]);
+            }
+            $model->id = $model->__insertID = $id;
             return true;
         }
         return false;
@@ -364,7 +369,7 @@ class DynamoDBSource extends DataSource {
             );
         } else {
             $options['Key'] = array(
-                'HashKeyElement' => $this->_setValueType($conditions[0])
+                'HashKeyElement' => $this->_setValueType($conditions)
             );
         }
         return $this->connection->delete_item($options);
@@ -893,6 +898,10 @@ class DynamoDBSource extends DataSource {
             return array(
                 AmazonDynamoDB::TYPE_STRING => $data[$model->alias.'.'.$name]
             );
+        } elseif (!empty($data[$model->alias][$name])) {
+            return array(
+                AmazonDynamoDB::TYPE_STRING => $data[$model->alias][$name]
+            );
         } else {
             return array(
                 AmazonDynamoDB::TYPE_STRING => String::uuid()
@@ -919,6 +928,10 @@ class DynamoDBSource extends DataSource {
         } elseif (!empty($data[$model->alias.'.'.$name])) {
             return array(
                 AmazonDynamoDB::TYPE_NUMBER => $data[$model->alias.'.'.$name]
+            );
+        } elseif (!empty($data[$model->alias][$name])) {
+            return array(
+                AmazonDynamoDB::TYPE_NUMBER => (string)$data[$model->alias][$name]
             );
         } else {
             $number = str_replace('.', '', microtime(true));
@@ -947,6 +960,10 @@ class DynamoDBSource extends DataSource {
         } elseif (!empty($data[$model->alias.'.'.$name])) {
             return array(
                 AmazonDynamoDB::TYPE_BINARY => $data[$model->alias.'.'.$name]
+            );
+        } elseif (!empty($data[$model->alias][$name])) {
+            return array(
+                AmazonDynamoDB::TYPE_BINARY => $data[$model->alias][$name]
             );
         } else {
             return array(

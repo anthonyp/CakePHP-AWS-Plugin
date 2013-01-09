@@ -245,6 +245,37 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertFalse($this->DynamoDB->describe($this->Model1));
         $this->DynamoDB->connected = true;
         
+        $response = (object)array(
+            'body' => array(
+                'Table' => array(
+                    'CreationDateTime' => '1357332261.304',
+                    'ItemCount' => '326',
+                    'KeySchema' => array(
+                        'HashKeyElement' => array(
+                            'AttributeName' => 'id',
+                            'AttributeType' => 'S',
+                        ),
+                    ),
+                    'ProvisionedThroughput' => array(
+                        'LastIncreaseDateTime' => '1357332337.472',
+                        'NumberOfDecreasesToday' => '0',
+                        'ReadCapacityUnits' => '100',
+                        'WriteCapacityUnits' => '50',
+                    ),
+                    'TableName' => 'Model1',
+                    'TableSizeBytes' => '28841',
+                    'TableStatus' => 'ACTIVE',
+                ),
+            ),
+            'status' => 200,
+        );
+        
+        $options = array(
+            'TableName' => 'Model1'
+        );
+        
+        $this->AmazonDynamoDB->expectAt(0, 'describe_table', array($options));
+        $this->AmazonDynamoDB->setReturnValueAt(0, 'describe_table', $response);
         $this->expectError(__('Schema is not configured in the model.', true));
         $this->DynamoDB->describe($this->Model1);
         
@@ -284,31 +315,7 @@ class DynamoDBTestCase extends CakeTestCase {
                 'null' => true,
             )
         );
-        $response = (object)array(
-            'body' => array(
-                'Table' => array(
-                    'CreationDateTime' => '1357332261.304',
-                    'ItemCount' => '326',
-                    'KeySchema' => array(
-                        'HashKeyElement' => array(
-                            'AttributeName' => 'id',
-                            'AttributeType' => 'S',
-                        ),
-                    ),
-                    'ProvisionedThroughput' => array(
-                        'LastIncreaseDateTime' => '1357332337.472',
-                        'NumberOfDecreasesToday' => '0',
-                        'ReadCapacityUnits' => '100',
-                        'WriteCapacityUnits' => '50',
-                    ),
-                    'TableName' => 'Model1',
-                    'TableSizeBytes' => '28841',
-                    'TableStatus' => 'ACTIVE',
-                ),
-            ),
-            'status' => 200,
-        );
-        $this->AmazonDynamoDB->setReturnValueAt(1, 'describe_table', $response);
+        
         $results = $this->DynamoDB->describe($this->Model1);
         $this->assertEqual($this->Model1->schema, $results);
         $this->assertEqual($this->Model1->primaryKeyType, 'hash');
@@ -349,7 +356,8 @@ class DynamoDBTestCase extends CakeTestCase {
             ),
             'status' => 200,
         );
-        $this->AmazonDynamoDB->setReturnValueAt(3, 'describe_table', $response);
+        $this->AmazonDynamoDB->expectAt(1, 'describe_table', array($options));
+        $this->AmazonDynamoDB->setReturnValueAt(1, 'describe_table', $response);
         $results = $this->DynamoDB->describe($this->Model1);
         $this->assertEqual($this->Model1->schema, $results);
         $this->assertEqual($this->Model1->primaryKeyType, 'hashAndRange');
@@ -382,16 +390,39 @@ class DynamoDBTestCase extends CakeTestCase {
             'status' => 200,
         );
         
+        $primaryKeyHashKeyElementAttributeType = 'S';
+        $this->Model1->primaryKeySchema = array(
+            'HashKeyElement' => array(
+                'AttributeName' => 'id',
+                'AttributeType' => $primaryKeyHashKeyElementAttributeType
+            )
+        );
+        
         $id = uniqid();
         $title = 'Post #'. $id;
         $data = array(
             'Model1' => array(
                 'id' => $id,
-                'rev' => rand(1,9),
+                'rev' => 1,
                 'title' => $title,
                 'description' => 'Description for '. $title
             )
         );
+        
+        $options = array(
+            'TableName' => 'Model1',
+            'Item' => array(
+                'Model1' => array(
+                    'SS' => array(
+                        'id' => array($primaryKeyHashKeyElementAttributeType => $id),
+                        'rev' => 1,
+                        'title' => $title,
+                        'description' => 'Description for '. $title
+                    )
+                )
+            )
+        );
+        $this->AmazonDynamoDB->expect('put_item', array($options));
         
         $fields = array_keys($data);
         $values = array_values($data);
@@ -481,6 +512,13 @@ class DynamoDBTestCase extends CakeTestCase {
             'item2' => array('N' => 2),
             'item3' => array('N' => 3)
         );
+        $options = array(
+            'TableName' => 'Model1',
+            'Key' => array(
+                'HashKeyElement' => array('S' => 'post-2013-01-01_1')
+            ),
+        );
+        $this->AmazonDynamoDB->expect('get_item', array($options));
         $this->AmazonDynamoDB->setReturnValue('get_item', $response);
         $results = $this->DynamoDB->read($this->Model1, $query);
         $expected = array(0 => array(
@@ -524,11 +562,30 @@ class DynamoDBTestCase extends CakeTestCase {
         $data = array(
             'Model1' => array(
                 'id' => $id,
-                'rev' => rand(1,9),
+                'rev' => 1,
                 'title' => $title,
                 'description' => 'Description for '. $title
             )
         );
+        
+        $options = array(
+            'TableName' => 'Model1',
+            'Key' => array(),
+            'AttributeUpdates' => array(
+                'Model1' => array(
+                    'Action' => 'PUT',
+                    'Value' => array(
+                        'SS' => array(
+                            'id' => $id,
+                            'rev' => 1,
+                            'title' => 'Post #'. $id,
+                            'description' => 'Description for Post #'. $id
+                        )
+                    )
+                )
+            )
+        );
+        $this->AmazonDynamoDB->expect('update_item', array($options));
         
         $fields = array_keys($data);
         $values = array_values($data);
@@ -552,12 +609,38 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertFalse($this->DynamoDB->delete($this->Model1, array()));
         $this->DynamoDB->connected = true;
         
+        $conditions = 'post-2013-01-01_1';
+        $options = array(
+            'TableName' => 'Model1',
+            'Key' => array(
+                'HashKeyElement' => array(
+                    'S' => 'post-2013-01-01_1'
+                )
+            )
+        );
+        $this->AmazonDynamoDB->expectAt(0, 'delete_item', array($options));
         $this->AmazonDynamoDB->setReturnValueAt(0, 'delete_item', true);
-        $this->assertTrue($this->DynamoDB->delete($this->Model1, array('post-2013-01-01_1')));
+        $this->assertTrue(
+            $this->DynamoDB->delete($this->Model1, array($conditions))
+        );
         
-        $conditions = array(array('post-2013-01-01_1', 'The super story'));
+        $conditions = array('post-2013-01-01_1', 'The super story');
+        $options = array(
+            'TableName' => 'Model1',
+            'Key' => array(
+                'HashKeyElement' => array(
+                    'S' => 'post-2013-01-01_1'
+                ),
+                'RangeKeyElement' => array(
+                    'S' => 'The super story'
+                )
+            )
+        );
+        $this->AmazonDynamoDB->expectAt(1, 'delete_item', array($options));
         $this->AmazonDynamoDB->setReturnValueAt(1, 'delete_item', false);
-        $this->assertFalse($this->DynamoDB->delete($this->Model1, $conditions));
+        $this->assertFalse(
+            $this->DynamoDB->delete($this->Model1, array($conditions))
+        );
         
     }
     
@@ -582,6 +665,7 @@ class DynamoDBTestCase extends CakeTestCase {
                 'AttributesToGet' => array('id', 'tags')
             )
         );
+        $this->AmazonDynamoDB->expectAt(0, 'get_item', array($options));
         $this->AmazonDynamoDB->setReturnValue('get_item', true);
         $this->assertTrue($this->DynamoDB->query('get_item', array($options)));
         
@@ -1345,6 +1429,17 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertEqual($result, $expected);
         
         $data = array(
+            'Model1' => array('id' => '550e8400-e29b-41d4-a716-446655440000'),
+        );
+        $expected = array(AmazonDynamoDB::TYPE_STRING => $data['Model1']['id']);
+        $result = $this->DynamoDB->_setStringPrimaryKeyValue(
+            $this->Model1,
+            'id',
+            $data
+        );
+        $this->assertEqual($result, $expected);
+        
+        $data = array(
             'rev'   => 2,
             'title' => 'The super story',
             'text'  => 'The super story is a test'
@@ -1384,6 +1479,17 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertEqual($result, $expected);
         
         $data = array(
+            'Model1' => array('id' => 100),
+        );
+        $expected = array(AmazonDynamoDB::TYPE_NUMBER => $data['Model1']['id']);
+        $result = $this->DynamoDB->_setNumberPrimaryKeyValue(
+            $this->Model1,
+            'id',
+            $data
+        );
+        $this->assertEqual($result, $expected);
+        
+        $data = array(
             'rev'   => 2,
             'title' => 'The super story',
             'text'  => 'The super story is a test'
@@ -1415,6 +1521,17 @@ class DynamoDBTestCase extends CakeTestCase {
             'Model1.id' => 100,
         );
         $expected = array(AmazonDynamoDB::TYPE_BINARY => $data['Model1.id']);
+        $result = $this->DynamoDB->_setBinaryPrimaryKeyValue(
+            $this->Model1,
+            'id',
+            $data
+        );
+        $this->assertEqual($result, $expected);
+        
+        $data = array(
+            'Model1' => array('id' => 100),
+        );
+        $expected = array(AmazonDynamoDB::TYPE_BINARY => $data['Model1']['id']);
         $result = $this->DynamoDB->_setBinaryPrimaryKeyValue(
             $this->Model1,
             'id',
