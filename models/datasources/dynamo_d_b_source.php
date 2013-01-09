@@ -70,6 +70,7 @@ class DynamoDBSource extends DataSource {
         if ($autoConnect) {
             return $this->connect();
         }
+        return true;
     }
     
     /**
@@ -107,15 +108,14 @@ class DynamoDBSource extends DataSource {
         if ($this->connected === true) {
             return $this->connection;
         }
-        if (!class_exists('AmazonDynamoDB', false)) {
-            require_once(App::pluginPath('AWS') . 'vendors/s_d_k_class.php');
-        }
+        
         $options = array(
             'key' => $this->_config['login'],
             'secret' => $this->_config['password'],
             'default_cache_config' => $this->_config['default_cache_config']
         );
-        if ($this->connection = new AmazonDynamoDB($options)) {
+        $this->connection = $this->createConnection($options);
+        if ($this->connection) {
             if ($region) {
                 $this->connection->set_region($region);
             } else {
@@ -124,6 +124,13 @@ class DynamoDBSource extends DataSource {
             $this->connected = true;
         }
         return $this->connection;
+    }
+    
+    public function createConnection($options = array(), $service = 'AmazonDynamoDB') {
+        if (!class_exists($service, false)) {
+            App::import('Vendor', 'AWS.s_d_k_class.php');
+        }
+        return new AmazonDynamoDB($options);
     }
     
     /**
@@ -162,11 +169,7 @@ class DynamoDBSource extends DataSource {
         if (!$this->connected) {
             return false;
         }
-        return $this->connection
-                ->list_tables()
-                ->body
-                ->TableNames()
-                ->map_string();
+        return $this->_parseTableNames($this->connection->list_tables());
     }
     
     /**
@@ -194,10 +197,12 @@ class DynamoDBSource extends DataSource {
         }
         if (empty($model->schema)) {
             trigger_error(__('Schema is not configured in the model.', true));
+            return false;
         }
         $options = array(
             'TableName' => $model->table
         );
+        $t = $this->connection->describe_table($options);
         $response = $this->_parseTable(
             $model,
             $this->connection->describe_table($options)
@@ -247,10 +252,9 @@ class DynamoDBSource extends DataSource {
             'TableName' => $model->table,
             'Item' => $data
         );
-        $result = $this->connection->put_item($options);
-        if (!empty($result) && $result->status == 200) {
-            $model->setInsertId($this->_getPrimaryKeyValue($data[$model->primaryKey]));
-            $model->id = $this->_getPrimaryKeyValue($data[$model->primaryKey]);
+        $response = $this->connection->put_item($options);
+        if (!empty($response) && $response->status == 200) {
+            $mode->id = $model->__insertID = $this->_getPrimaryKeyValue($data[$model->primaryKey]);
             return true;
         }
         return false;
@@ -261,6 +265,7 @@ class DynamoDBSource extends DataSource {
      *
      * Reads record(s) from the database.
      *
+     * @todo add support findQueryType 'list' and 'first'
      * @param object $model A Model object that the query is for.
      * @param array $query An array of queryData information containing 
      *        keys similar to Model::find().
@@ -285,6 +290,7 @@ class DynamoDBSource extends DataSource {
                 $results = $this->_readWithScan($model, $query);
                 break;
         }
+        
         if ($readType == 'get_item') {
             $results = $this->_parseItem($model, $results);
         } else {
@@ -294,14 +300,7 @@ class DynamoDBSource extends DataSource {
             return false;
         }
         if ($model->findQueryType == 'count') {
-            // this is bad!
             return array('0'=>array('0'=>array('count'=>count($results))));
-        }
-        if ($model->findQueryType == 'list') {
-            
-        }
-        if ($model->findQueryType == 'first') {
-            
         }
         return $results;
     }
@@ -376,7 +375,7 @@ class DynamoDBSource extends DataSource {
      * Wraps Amazon DynamoDB SDK API methods
      *
      * @link http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/operationlist.html
-     * @param mixed All params relative to Amazon DynamoDB SDK API.
+     * @param mixed All methods of Amazon DynamoDB SDK API.
      * @return mixed Returns mixed value relative to Amazon DynamoDB SDK API.
      * @since 0.1
      */
@@ -496,16 +495,24 @@ class DynamoDBSource extends DataSource {
             $options['AttributesToGet'] = $fields;
         }
         
-        if (!empty($limit)) {
+        if (!empty($limit) && is_numeric($limit)) {
             $options['Limit'] = $limit;
         }
         
-        if (!empty($consistentRead)) {
+        if (!empty($consistentRead) && is_bool($consistentRead)) {
             $options['ConsistentRead'] = $consistentRead;
         }
         
-        if (!empty($count)) {
+        if (!empty($count) && is_bool($count)) {
             $options['Count'] = $count;
+        }
+        
+        if (!empty($scanIndexForward) && is_bool($scanIndexForward)) {
+            $options['ScanIndexForward'] = $scanIndexForward;
+        }
+        
+        if (!empty($exclusiveStartKey) && is_string($exclusiveStartKey)) {
+            $options['ExclusiveStartKey'] = $exclusiveStartKey;
         }
         
         $conditions = $this->_getConditions($model, $conditions);
@@ -521,14 +528,8 @@ class DynamoDBSource extends DataSource {
                     );
                 }
             }
-        }
-        
-        if (!empty($scanIndexForward)) {
-            $options['ScanIndexForward'] = $scanIndexForward;
-        }
-        
-        if (!empty($exclusiveStartKey)) {
-            $options['ExclusiveStartKey'] = $exclusiveStartKey;
+        } else {
+            return false;
         }
         
         return $this->connection->query($options);
@@ -556,12 +557,16 @@ class DynamoDBSource extends DataSource {
             $options['AttributesToGet'] = $fields;
         }
         
-        if (!empty($limit)) {
+        if (!empty($limit) && is_numeric($limit)) {
             $options['Limit'] = $limit;
         }
         
-        if (!empty($count)) {
+        if (!empty($count) && is_bool($count)) {
             $options['Count'] = $count;
+        }
+        
+        if (!empty($exclusiveStartKey) && is_string($exclusiveStartKey)) {
+            $options['ExclusiveStartKey'] = $exclusiveStartKey;
         }
         
         if (!empty($conditions)) {
@@ -579,22 +584,8 @@ class DynamoDBSource extends DataSource {
             }
         }
         
-        if (!empty($exclusiveStartKey)) {
-            $options['ExclusiveStartKey'] = $exclusiveStartKey;
-        }
+        return $this->connection->scan($options);
         
-        $response = $this->connection->scan($options);
-        if ($response->status != 200) {
-            if (!empty($response->body->message)) {
-                $message = $response->body->message;
-            } elseif (!empty($response->body->Message)) {
-                $message = $response->body->Message;
-            } else {
-                $message = __('Unknown API error', true);
-            }
-            trigger_error($message);
-        }
-        return $response;
     }
     
     /**
@@ -746,6 +737,21 @@ class DynamoDBSource extends DataSource {
             return false;
         }
         return $data['body']['Table'];
+    }
+    
+    /**
+     * Parse the TableNames Element from an API call response
+     *
+     * @param object $response Response object.
+     * @return mixed Return false on error. TableNames element array on success.
+     * @since 0.1
+     */
+    public function _parseTableNames($response = null) {
+        $data = $this->_toArray($response);
+        if (empty($data['body']['TableNames'])) {
+            return false;
+        }
+        return $data['body']['TableNames'];
     }
     
     /**
