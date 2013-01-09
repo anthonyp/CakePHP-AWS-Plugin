@@ -239,11 +239,14 @@ class DynamoDBTestCase extends CakeTestCase {
      *
      * @return void
      */
-    public function testDescribe() {
+    public function testDescribe1() {
         
         $this->DynamoDB->connected = false;
         $this->assertFalse($this->DynamoDB->describe($this->Model1));
         $this->DynamoDB->connected = true;
+    }
+    
+    public function testDescribe2() {
         
         $response = (object)array(
             'body' => array(
@@ -274,10 +277,13 @@ class DynamoDBTestCase extends CakeTestCase {
             'TableName' => 'Model1'
         );
         
-        $this->AmazonDynamoDB->expectAt(0, 'describe_table', array($options));
-        $this->AmazonDynamoDB->setReturnValueAt(0, 'describe_table', $response);
+        $this->AmazonDynamoDB->expect('describe_table', array($options));
+        $this->AmazonDynamoDB->setReturnValue('describe_table', $response);
         $this->expectError(__('Schema is not configured in the model.', true));
         $this->DynamoDB->describe($this->Model1);
+    }
+    
+    public function testDescribe3() {
         
         $this->Model1->table = 'Model1';
         $this->Model1->schema = array(
@@ -316,6 +322,37 @@ class DynamoDBTestCase extends CakeTestCase {
             )
         );
         
+        $response = (object)array(
+            'body' => array(
+                'Table' => array(
+                    'CreationDateTime' => '1357332261.304',
+                    'ItemCount' => '326',
+                    'KeySchema' => array(
+                        'HashKeyElement' => array(
+                            'AttributeName' => 'id',
+                            'AttributeType' => 'S',
+                        ),
+                    ),
+                    'ProvisionedThroughput' => array(
+                        'LastIncreaseDateTime' => '1357332337.472',
+                        'NumberOfDecreasesToday' => '0',
+                        'ReadCapacityUnits' => '100',
+                        'WriteCapacityUnits' => '50',
+                    ),
+                    'TableName' => 'Model1',
+                    'TableSizeBytes' => '28841',
+                    'TableStatus' => 'ACTIVE',
+                ),
+            ),
+            'status' => 200,
+        );
+        
+        $options = array(
+            'TableName' => 'Model1'
+        );
+        
+        $this->AmazonDynamoDB->expect('describe_table', array($options));
+        $this->AmazonDynamoDB->setReturnValue('describe_table', $response);
         $results = $this->DynamoDB->describe($this->Model1);
         $this->assertEqual($this->Model1->schema, $results);
         $this->assertEqual($this->Model1->primaryKeyType, 'hash');
@@ -326,6 +363,47 @@ class DynamoDBTestCase extends CakeTestCase {
         $this->assertEqual(
             $response->body['Table']['KeySchema']['HashKeyElement']['AttributeName'],
             $this->Model1->primaryKey
+        );
+        
+    }
+    
+    public function testDescribe4() {
+        
+        $this->Model1->table = 'Model1';
+        $this->Model1->schema = array(
+            'id' => array(
+                'type' => 'string',
+                'null' => true,
+                'key' => 'primary',
+                'length' => 32,
+            ),
+            'rev' => array(
+                'type' => 'string',
+                'null' => true,
+                'length' => 34,
+            ),
+            'reads' => array(
+                'type' => 'string',
+                'null' => true,
+                'length' => 34,
+            ),
+            'title' => array(
+                'type' => 'string',
+                'null' => true,
+                'length' => 255,
+            ),
+            'description' => array(
+                'type' => 'string',
+                'null' => true,
+            ),
+            'tags' => array(
+                'type' => 'set',
+                'null' => true,
+            ),
+            'category' => array(
+                'type' => 'string',
+                'null' => true,
+            )
         );
         
         $response = (object)array(
@@ -356,8 +434,13 @@ class DynamoDBTestCase extends CakeTestCase {
             ),
             'status' => 200,
         );
-        $this->AmazonDynamoDB->expectAt(1, 'describe_table', array($options));
-        $this->AmazonDynamoDB->setReturnValueAt(1, 'describe_table', $response);
+        
+        $options = array(
+            'TableName' => 'Model1'
+        );
+        
+        $this->AmazonDynamoDB->expect('describe_table', array($options));
+        $this->AmazonDynamoDB->setReturnValue('describe_table', $response);
         $results = $this->DynamoDB->describe($this->Model1);
         $this->assertEqual($this->Model1->schema, $results);
         $this->assertEqual($this->Model1->primaryKeyType, 'hashAndRange');

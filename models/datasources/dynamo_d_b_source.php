@@ -197,7 +197,7 @@ class DynamoDBSource extends DataSource {
         }
         if (empty($model->schema)) {
             trigger_error(__('Schema is not configured in the model.', true));
-            return false;
+            return $this->connected = false;
         }
         $options = array(
             'TableName' => $model->table
