@@ -175,7 +175,7 @@ class DynamoDBSource extends DataSource {
     /**
      * Calculate
      *
-     * No SQL statments used return always true.
+     * No SQL statements used return always true.
      *
      * @return boolean True.
      * @since 0.1
@@ -538,7 +538,6 @@ class DynamoDBSource extends DataSource {
         }
         
         return $this->connection->query($options);
-        
     }
     
     /**

@@ -785,13 +785,23 @@ class DynamoDBTestCase extends CakeTestCase {
             )
         );
         
+        $id = 'post-2013-01-01_1';
+        
+        $options = array(
+            'TableName' => 'Model1',
+            'Key' => array(
+                'HashKeyElement' => array('S' => $id)
+            )
+        );
+        $this->AmazonDynamoDB->expect('get_item', array($options));
+        
         $query = array(
-            'conditions' => array('Model1.id'=>'post-2013-01-01_1')
+            'conditions' => array('Model1.id'=>$id)
         );
         $this->AmazonDynamoDB->setReturnValue('get_item', true);
         $this->assertTrue($this->DynamoDB->_readWithGetItem($this->Model1, $query));
         
-        $this->Model1->id = 'post-2013-01-01_2';
+        $this->Model1->id = $id;
         
         $query = array(
             'conditions' => array()
@@ -838,6 +848,26 @@ class DynamoDBTestCase extends CakeTestCase {
                 'Model1.title <>' => 'The super story'
             )
         );
+        
+        $options = array(
+            'TableName' => 'Model1',
+            'AttributesToGet' => array('id', 'title'),
+            'Limit' => 2,
+            'ConsistentRead' => true,
+            'Count' => true,
+            'ScanIndexForward' => true,
+            'ExclusiveStartKey' => 'post-2013-01-01_1',
+            'HashKeyValue' => array(
+                'S' => 'post-2013-01-01_2',
+            ),
+            'RangeKeyCondition' => array(
+                'ComparisonOperator' => 'NE',
+                'AttributeValueList' => array(
+                    array('S' => 'The super story'),
+                )
+            )
+        );
+        $this->AmazonDynamoDB->expect('query', array($options));
         $this->AmazonDynamoDB->setReturnValue('query', true);
         $this->assertTrue($this->DynamoDB->_readWithQuery($this->Model1, $query));
         
@@ -863,6 +893,23 @@ class DynamoDBTestCase extends CakeTestCase {
             'exclusiveStartKey' => 'post-2013-01-01_1',
             'conditions' => array('Model1.id' => 'post-2013-01-01_2')
         );
+        
+        $options = array(
+            'TableName' => 'Model1',
+            'AttributesToGet' => array('id', 'title'),
+            'Limit' => 2,
+            'Count' => true,
+            'ExclusiveStartKey' => 'post-2013-01-01_1',
+            'ScanFilter' => array(
+                'id' => array(
+                    'ComparisonOperator' => 'EQ',
+                    'AttributeValueList' => array(
+                        array('S' => 'post-2013-01-01_2')
+                    ),
+                ),
+            ),
+        );
+        $this->AmazonDynamoDB->expect('scan', array($options));
         $this->AmazonDynamoDB->setReturnValue('scan', true);
         $this->assertTrue($this->DynamoDB->_readWithScan($this->Model1, $query));
         
