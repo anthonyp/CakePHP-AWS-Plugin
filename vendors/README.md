@@ -1,5 +1,7 @@
 # AWS SDK for PHP
 
+> This is the repository for version 1 of the AWS SDK for PHP. For the new **AWS SDK for PHP 2**, see <http://github.com/aws/aws-sdk-php>.
+
 The AWS SDK for PHP enables developers to build solutions for Amazon Simple Storage Service (Amazon S3),
 Amazon Elastic Compute Cloud (Amazon EC2), Amazon SimpleDB, and more. With the AWS SDK for PHP, developers
 can get started in minutes with a single, downloadable package.
@@ -18,20 +20,29 @@ For more information about the AWS SDK for PHP, including a complete list of sup
 [aws.amazon.com/sdkforphp](http://aws.amazon.com/sdkforphp).
 
 
-## Signing up for Amazon Web Services
+## Staying up-to-date!
+We tend to release new updates very frequently. In order to keep up with the newest features and the latest bug fixes,
+we encourage you to subscribe to our release announcements, and to keep your code current.
 
-Before you can begin, you must sign up for each service you want to use.
+### Release announcements
+You can subscribe to release announcements via:
 
-To sign up for a service:
+* [RSS feed](http://pear.amazonwebservices.com/feed.xml)
+* [Twitter](https://twitter.com/awssdkforphp)
+* [Facebook](https://www.facebook.com/pages/AWS-SDK-for-PHP/276240099155588)
+* [Mobile notifications](http://ifttt.com/recipes/52404)
+* [SMS notifications](http://ifttt.com/recipes/52409)
+* [Email notifications](http://ifttt.com/recipes/52408)
 
-* Go to the home page for the service. You can find a list of services on
-  [aws.amazon.com/products](http://aws.amazon.com/products).
-* Click the Sign Up button on the top right corner of the page. If you don't already have an AWS account, you
-  are prompted to create one as part of the sign up process.
-* Follow the on-screen instructions.
-* AWS sends you a confirmation e-mail after the sign-up process is complete. At any time, you can view your
-  current account activity and manage your account by going to [aws.amazon.com](http://aws.amazon.com) and
-  clicking "Your Account".
+Only the RSS feed is supported by AWS. The other channels are bots created/managed by third-parties.
+
+### Getting the latest versions
+You can get the latest version of the SDK via:
+
+* [Composer/Packagist](http://packagist.org/packages/amazonwebservices/aws-sdk-for-php)
+* [PEAR channel](http://pear.amazonwebservices.com)
+* [GitHub](http://github.com/amazonwebservices/aws-sdk-for-php)
+* [Zip file](http://aws.amazon.com/sdkforphp/)
 
 
 ## Source
@@ -41,6 +52,8 @@ The source tree for includes the following files and directories:
   run on your server to determine whether or not your PHP environment meets the minimum requirements.
 * `_docs` -- Informational documents, the contents of which should be fairly self-explanatory.
 * `_samples` -- Code samples that you can run out of the box.
+* `extensions` -- Extra code that can be used to enhance usage of the SDK, but isn't a service class or a
+  third-party library.
 * `lib` -- Contains any third-party libraries that the SDK depends on. The licenses for these projects will
   always be Apache 2.0-compatible.
 * `services` -- Contains the service-specific classes that communicate with AWS. These classes are always
@@ -112,15 +125,54 @@ From the command-line, you can install the SDK with PEAR as follows:
     pear channel-discover pear.amazonwebservices.com
     pear install aws/sdk
 
-You may need to use `sudo` for the above commands.
+You may need to use `sudo` for the above commands. Once the SDK has been installed via PEAR, you can load it into
+your project with:
 
-### Configuration
+	require_once 'AWSSDKforPHP/sdk.class.php';
+
+### Via Composer
+
+[Composer](http://getcomposer.org) is a newer dependency manager for PHP, and is now supported by the SDK.
+
+In order to use the AWS SDK for PHP via Composer, you must do the following:
+
+1. Add ``amazonwebservices/aws-sdk-for-php`` as a dependency in your project's ``composer.json`` file:
+
+        {
+            "require": {
+                "amazonwebservices/aws-sdk-for-php": "*"
+            }
+        }
+
+    Consider tightening your dependencies to a known version when deploying mission critical applications (e.g. ``1.5.*``).
+
+2. Download and install Composer:
+
+    curl -s http://getcomposer.org/installer | php
+
+3. Install your dependencies:
+
+    php composer.phar install
+
+4. Require Composer's autoloader
+
+    Composer also prepares an autoload file that's capable of autoloading all of the classes in any of the libraries that it downloads. To use it, just add the following line to your code's bootstrap process:
+
+    require 'vendor/autoload.php';
+
+You can find out more on how to install Composer, configure autoloading, and other best-practices for defining dependencies at [getcomposer.org](http://getcomposer.org).
+
+## Configuration
 
 1. Copy the contents of [config-sample.inc.php](https://github.com/amazonwebservices/aws-sdk-for-php/raw/master/config-sample.inc.php)
    and add your credentials as instructed in the file.
 2. Move your file to `~/.aws/sdk/config.inc.php`.
 3. Make sure that `getenv('HOME')` points to your user directory. If not you'll need to set
    `putenv('HOME=<your-user-directory>')`.
+
+This is because PHP will attempt to load the file from your user directory (e.g., `~/.aws/sdk/config.inc.php`).
+If PHP doesn't happen to know where your user directory is, you'll need to tell PHP where it is with the `putenv()`
+function.
 
 
 ## Additional Information
