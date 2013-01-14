@@ -72,9 +72,9 @@ class CloudSearchSource extends DataSource {
     }
     
     /**
-     * Initialise the HttpSocket object to post/get data from CloudSearch API
+     * Initialise the HttpSocket object to post/get data
      *
-     * @return object Connection object.
+     * @return object HttpSocket object.
      * @since 0.1
      */
     public function setHttpSocket() {
