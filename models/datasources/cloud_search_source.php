@@ -184,7 +184,6 @@ class CloudSearchSource extends DataSource {
             'https://%s/%s/search',
             $this->config['search_endpoint'],
             $this->config['api_version']
-            
         );
         return $this->Http->get($url, $params);
     }

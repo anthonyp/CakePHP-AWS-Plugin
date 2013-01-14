@@ -183,7 +183,6 @@ class CloudSearchTestCase extends CakeTestCase {
             'https://%s/%s/search',
             $this->config['search_endpoint'],
             $this->config['api_version']
-            
         );
         
         $params = array(

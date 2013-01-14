@@ -137,7 +137,6 @@ class MovieTestCase extends CakeTestCase {
         
         debug($response);
         
-        
     }
     
     public function testSearchResultTypeParam() {
