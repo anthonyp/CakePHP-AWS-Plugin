@@ -100,9 +100,10 @@ class CloudSearchTestCase extends CakeTestCase {
      */
     public function testSetHttpSocket() {
         
-        // $result = $this->CloudSearch->setHttpSocket();
-        // 
-        // $this->assertTrue(is_object($result));
+        $this->assertEqual(
+            $this->CloudSearch->Http,
+            $this->CloudSearch->setHttpSocket()
+        );
         
     }
     
@@ -215,7 +216,6 @@ class CloudSearchTestCase extends CakeTestCase {
         
         $this->CloudSearch->Http->expect('post', array($url, json_encode($params)));
         $this->CloudSearch->search($params);
-        
         
     }
     

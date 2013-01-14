@@ -81,6 +81,7 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             $this->Http = new HttpSocket();
         }
+        return $this->Http;
     }
     
     /**
