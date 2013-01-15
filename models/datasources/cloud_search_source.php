@@ -84,20 +84,9 @@ class CloudSearchSource extends DataSource {
         return $this->Http;
     }
     
-    // public function listSources() {
-    //     debug(__FUNCTION__);
-    //     return array('none');
-    // }
-    // 
-    // public function describe(&$model = null) {
-    //     debug(__FUNCTION__);
-    //     return $model->schema;
-    // }
-    
     public function calculate() {
         return true;
     }
-    
     
     /**
      * The "C" in CRUD
@@ -142,8 +131,10 @@ class CloudSearchSource extends DataSource {
         
         extract($query);
         
-        if (sizeof($conditions) == 1 and isset($conditions[$model->alias .'.id'])) {
-            return false;
+        $key = $model->alias .'.id';
+        if (sizeof($conditions) == 1 and isset($conditions[$key])) {
+            $conditions['bq'] = "docid:'{$conditions[$key]}'";
+            unset($conditions[$key]);
         }
         
         if (empty($conditions['q']) and empty($conditions['bq'])) {
@@ -158,11 +149,10 @@ class CloudSearchSource extends DataSource {
             $conditions['start'] = $page;
         }
         
-        $results = $this->search($conditions);
-        debug($results);
+        $results = $this->parseSearchResponse($this->search($conditions));
         
         if ($model->findQueryType == 'count') {
-            return array('0'=>array('0'=>array('count'=>0)));
+            return array('0'=>array('0'=>array('count'=>count($results))));
         }
         
         return $results;
@@ -186,7 +176,26 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
-        //debug(func_get_args());
+        // debug(__FUNCTION__);
+        // debug(func_get_args());
+        if ($fields !== null && $values !== null) {
+            $data = array_combine($fields, $values);
+        } else {
+            $data = $model->data;
+        }
+        $id = $data['id'];
+        unset($data['id']);
+        
+        $params[] = array(
+            'type' => 'add',
+            'id' => $id,
+            'version' => time(),
+            'lang' => 'en',
+            'fields' => $data
+        );
+        $response = $this->document($params);
+        debug(h($response));
+        
         return true;
     }
     
@@ -215,7 +224,7 @@ class CloudSearchSource extends DataSource {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/SearchAPI.html
      * @param string $method Call document or search methods.
      * @param array $params Array of parameters for query.
-     * @param object $model Model object taht the record is for.
+     * @param object $model Model object that the record is for.
      * @return mixed Returns mixed value relative to Amazon DynamoDB SDK API.
      * @since 0.1
      */
@@ -279,9 +288,10 @@ class CloudSearchSource extends DataSource {
         // "Operations cannot be JSON arrays (near operation with index 1)"
         // this fix it, removing the initial json array wrap
         if (strpos($params, '[[') === 0) {
+            debug('removing');
             $params = substr($params, 1, -1);
         }
-        
+        debug($params);
         return $this->Http->post(
             $url,
             $params,
@@ -328,8 +338,40 @@ class CloudSearchSource extends DataSource {
         return $conditions;
     }
     
-    public function parseResponse($response = null) {
+    public function parseSearchResponse($response = null) {
         
+        $response = json_decode($response);
+        
+        if (!is_object($response)) {
+            return false;
+        }
+        
+        // handle errors here
+        
+        return $this->_toArray($response->hits->hit);
+        
+    }
+    
+    public function parseDocumentResponse($response = null) {
+        
+        $response = json_decode($response);
+        
+        if (!is_object($response)) {
+            return false;
+        }
+        
+        // handle errors here
+    }
+    
+    /**
+     * Converts to array an object
+     *
+     * @param object $data Data object.
+     * @return mixed Converted array on Success. Boolean false on error.
+     * @since 0.1
+     */
+    public function _toArray($data = null) {
+        return json_decode(json_encode((array)$data), 1);
     }
     
 }

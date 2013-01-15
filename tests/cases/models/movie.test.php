@@ -669,7 +669,8 @@ class MovieTestCase extends CakeTestCase {
             return;
         }
         
-        $this->assertFalse($this->Movie->read(null, '50f55c47042ce'));
+        $result = $this->Movie->read(null, 'tt1408101');
+        debug($result);
         
     }
     
@@ -687,13 +688,11 @@ class MovieTestCase extends CakeTestCase {
         
         $data = array(
             'id' => 'tt1408101',
-            'title' => 'Untitled Star Trek Sequel '. date('r'),
+            'title' => 'Untitled Star Trek Sequel ',
         );
         
-        //xdebug_break();
         //$response = $this->Movie->save($data, array('validate'=>false));
         $response = $this->Movie->save($data);
-        debug($this->Movie->validationErrors);
         debug($response);
         
     }
