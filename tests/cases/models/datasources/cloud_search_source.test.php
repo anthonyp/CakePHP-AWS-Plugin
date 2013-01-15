@@ -38,6 +38,13 @@ class CloudSearchTestCase extends CakeTestCase {
     public $Model = null;
     
     /**
+     * HttpSocket object
+     *
+     * @var object
+     */
+    public $Http = null;
+    
+    /**
      * Model configuration
      *
      * @var array
@@ -114,6 +121,8 @@ class CloudSearchTestCase extends CakeTestCase {
      */
     public function testCreate() {
         
+        
+        
     }
     
     /**
@@ -122,6 +131,8 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testRead() {
+        
+        
         
     }
     
@@ -132,6 +143,8 @@ class CloudSearchTestCase extends CakeTestCase {
      */
     public function testUpdate() {
         
+        
+        
     }
     
     /**
@@ -140,6 +153,8 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testDelete() {
+        
+        
         
     }
     
@@ -177,7 +192,7 @@ class CloudSearchTestCase extends CakeTestCase {
     public function testSearch() {
         
         $this->expectError(__('Invalid search parameters', true));
-        $this->CloudSearch->search();
+        $this->CloudSearch->search(array());
         
         $url = sprintf(
             'https://%s/%s/search',
@@ -189,8 +204,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'q' => 'Die Hard'
         );
         
-        $this->CloudSearch->Http->expect('get', array($url, $params));
-        $this->CloudSearch->search($params);
+        $expected = 'search_result';
+        $request = array('header' => array('Content-Type' => 'application/json'));
+        $this->CloudSearch->Http->setReturnValue('get', $expected);
+        $this->CloudSearch->Http->expect('get', array($url, $params, $request));
+        $result = $this->CloudSearch->search($params);
+        $this->assertEqual($expected, $result);
+        
     }
     
     /**
@@ -204,7 +224,7 @@ class CloudSearchTestCase extends CakeTestCase {
         $this->CloudSearch->document();
         
         $url = sprintf(
-            'https://%s/%s/documents/batch/',
+            'https://%s/%s/documents/batch',
             $this->config['document_endpoint'],
             $this->config['api_version']
         );
@@ -213,8 +233,12 @@ class CloudSearchTestCase extends CakeTestCase {
             'q' => 'Die Hard'
         );
         
-        $this->CloudSearch->Http->expect('post', array($url, json_encode($params)));
-        $this->CloudSearch->search($params);
+        $expected = 'document_result';
+        $request = array('header' => array('Content-Type' => 'application/json'));
+        $this->CloudSearch->Http->setReturnValue('post', $expected);
+        $this->CloudSearch->Http->expect('post', array($url, json_encode($params), $request));
+        $result = $this->CloudSearch->document($params);
+        $this->assertEqual($expected, $result);
         
     }
     
@@ -224,6 +248,8 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testConditions() {
+        
+        
         
     }
     

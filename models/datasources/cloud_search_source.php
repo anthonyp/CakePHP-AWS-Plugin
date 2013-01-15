@@ -84,6 +84,21 @@ class CloudSearchSource extends DataSource {
         return $this->Http;
     }
     
+    // public function listSources() {
+    //     debug(__FUNCTION__);
+    //     return array('none');
+    // }
+    // 
+    // public function describe(&$model = null) {
+    //     debug(__FUNCTION__);
+    //     return $model->schema;
+    // }
+    
+    public function calculate() {
+        return true;
+    }
+    
+    
     /**
      * The "C" in CRUD
      *
@@ -98,7 +113,11 @@ class CloudSearchSource extends DataSource {
      * @since 0.1
      */
     public function create(&$model, $fields = null, $values = null) {
-        debug(func_get_args());
+        if (!$this->Http) {
+            return false;
+        }
+        //debug(func_get_args());
+        return true;
     }
     
     /**
@@ -116,7 +135,38 @@ class CloudSearchSource extends DataSource {
      * @since 0.1
      */
     public function read(&$model, $query = array(), $recursive = null) {
-        debug(func_get_args());
+        
+        if (!$this->Http) {
+            return false;
+        }
+        
+        extract($query);
+        
+        if (sizeof($conditions) == 1 and isset($conditions[$model->alias .'.id'])) {
+            return false;
+        }
+        
+        if (empty($conditions['q']) and empty($conditions['bq'])) {
+            trigger_error(__('Invalid call empty query missing q/bq keys', true));
+        }
+        
+        if ($model->findQueryType == 'first') {
+            $conditions['size'] = 1;
+        }
+        
+        if (!empty($page) and $page > 1) {
+            $conditions['start'] = $page;
+        }
+        
+        $results = $this->search($conditions);
+        debug($results);
+        
+        if ($model->findQueryType == 'count') {
+            return array('0'=>array('0'=>array('count'=>0)));
+        }
+        
+        return $results;
+        
     }
     
     /**
@@ -133,7 +183,11 @@ class CloudSearchSource extends DataSource {
      * @since 0.1
      */
     public function update(&$model, $fields = null, $values = null) {
-        debug(func_get_args());
+        if (!$this->Http) {
+            return false;
+        }
+        //debug(func_get_args());
+        return true;
     }
     
     /**
@@ -148,7 +202,10 @@ class CloudSearchSource extends DataSource {
      * @since 0.1
      */
     public function delete(&$model, $conditions = null) {
-        debug(func_get_args());
+        if (!$this->Http) {
+            return false;
+        }
+        //debug(func_get_args());
     }
     
     /**
@@ -165,8 +222,16 @@ class CloudSearchSource extends DataSource {
     public function query($method = null, $params = array(), &$model = null) {
         if (is_string($method) && method_exists($this, $method)) {
             return call_user_func(array($this, $method), $params);
+        } elseif (strstr($method, 'findBy')) {
+            return $this->findBy($method, $params, $model);
         }
         trigger_error(__('Invalid method call: '.$method, true));
+    }
+    
+    
+    public function findBy($method = null, $params = array(), &$model = null) {
+        debug(func_get_args());
+        return true;
     }
     
     /**
@@ -176,7 +241,7 @@ class CloudSearchSource extends DataSource {
      * @return void
      * @since 0.1
      */
-    public function search($params = array()) {
+    public function search($params = array(), $type = 'application/json') {
         if (sizeof($params) == 0) {
             trigger_error(__('Invalid search parameters', true));
         }
@@ -185,7 +250,11 @@ class CloudSearchSource extends DataSource {
             $this->config['search_endpoint'],
             $this->config['api_version']
         );
-        return $this->Http->get($url, $params);
+        return $this->Http->get(
+            $url,
+            $params,
+            array('header' => array('Content-Type' => $type))
+        );
     }
     
     /**
@@ -195,16 +264,29 @@ class CloudSearchSource extends DataSource {
      * @return void
      * @since 0.1
      */
-    public function document($params = null) {
+    public function document($params = array(), $type = 'application/json') {
         if (sizeof($params) == 0) {
             trigger_error(__('Invalid document parameters', true));
         }
         $url = sprintf(
-            'https://%s/%s/documents/batch/',
+            'https://%s/%s/documents/batch',
             $this->config['document_endpoint'],
             $this->config['api_version']
         );
-        return $this->Http->post($url, json_encode($params));
+        $params = json_encode($params);
+        
+        // Amazon keep respondig with this error message:
+        // "Operations cannot be JSON arrays (near operation with index 1)"
+        // this fix it, removing the initial json array wrap
+        if (strpos($params, '[[') === 0) {
+            $params = substr($params, 1, -1);
+        }
+        
+        return $this->Http->post(
+            $url,
+            $params,
+            array('header' => array('Content-Type' => $type))
+        );
     }
     
     /**
@@ -216,6 +298,37 @@ class CloudSearchSource extends DataSource {
      * @since 0.1
      */
     public function conditions($conditions = array()) {
+        
+        if (empty($conditions)) {
+            return array();
+        }
+        
+        // foreach($conditions as $field=>$value) {
+        //     unset($conditions[$field]);
+        //     // does not support OR
+        //     if ($field == 'OR') {
+        //         continue;
+        //     }
+        //     $field = array_pop(explode('.', $field));
+        //     if (strpos($field, ' ') === false) {
+        //         $operator = '=';
+        //     } else {
+        //         list($field, $operator) = explode(' ', $field);
+        //     }
+        //     $operators = array('AND', 'OR', 'NOT');
+        //     if (!in_array($operator, $operators)) {
+        //         continue;
+        //     }
+        //     $conditions[$field] = array(
+        //         'operator' => $operators[$operator],
+        //         'value' => $value
+        //     );
+        // }
+        debug($conditions);
+        return $conditions;
+    }
+    
+    public function parseResponse($response = null) {
         
     }
     
