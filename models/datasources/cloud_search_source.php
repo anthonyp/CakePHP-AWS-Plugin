@@ -84,6 +84,14 @@ class CloudSearchSource extends DataSource {
         return $this->Http;
     }
     
+    /**
+     * Calculate
+     *
+     * No SQL statements used return always true.
+     *
+     * @return boolean True.
+     * @since 0.1
+     */
     public function calculate() {
         return true;
     }
@@ -127,10 +135,17 @@ class CloudSearchSource extends DataSource {
             unset($data['id']);
         }
         
+        if (empty($data['version'])) {
+            $version = time();
+        } else {
+            $version = $data['version'];
+            unset($data['version']);
+        }
+        
         $params[] = array(
             'type' => 'add',
             'id' => $id,
-            'version' => time(),
+            'version' => $version,
             'lang' => 'en',
             'fields' => $data
         );
@@ -175,7 +190,8 @@ class CloudSearchSource extends DataSource {
         }
         
         if (empty($conditions['q']) && empty($conditions['bq'])) {
-            trigger_error(__('Invalid call empty query missing q/bq keys', true));
+            trigger_error(__('Empty query string', true));
+            return false;
         }
         
         if ($model->findQueryType == 'first') {
@@ -222,13 +238,25 @@ class CloudSearchSource extends DataSource {
             $data = $model->data;
         }
         
+        if (empty($data['id'])) {
+            trigger_error(__('The document ID is required for updates', true));
+            return false;
+        }
+        
         $id = $data['id'];
         unset($data['id']);
+        
+        if (empty($data['version'])) {
+            $version = time();
+        } else {
+            $version = $data['version'];
+            unset($data['version']);
+        }
         
         $params[] = array(
             'type' => 'add',
             'id' => $id,
-            'version' => time(),
+            'version' => $version,
             'lang' => 'en',
             'fields' => $data
         );
@@ -249,10 +277,11 @@ class CloudSearchSource extends DataSource {
      * @todo add support for $conditions
      * @param object $model Model object that the record is for.
      * @param mixed $conditions The conditions to use for deleting.
+     * @param integer $version Document version number.
      * @return boolean Success.
      * @since 0.1
      */
-    public function delete(&$model, $conditions = null) {
+    public function delete(&$model, $conditions = null, $version = null) {
         if (!$this->Http) {
             return false;
         }
@@ -261,16 +290,22 @@ class CloudSearchSource extends DataSource {
         
         if (sizeof($conditions) > 1) {
             trigger_error(__('Conditional delete are not supported yet...', true));
+            return false;
         }
         
         if (sizeof($conditions) === 1 && empty($conditions[$model->alias.'.id'])) {
             trigger_error(__('Document ID is required for delete', true));
+            return false;
+        }
+        
+        if (empty($version)) {
+            $version = time();
         }
         
         $params[] = array(
             'type' => 'delete',
             'id' => $conditions[$model->alias.'.id'],
-            'version' => time()
+            'version' => $version
         );
         
         $results = $this->document($params);
@@ -324,13 +359,20 @@ class CloudSearchSource extends DataSource {
             $this->config['search_endpoint'],
             $this->config['api_version']
         );
+        
         $response = $this->Http->get(
             $url,
             $params,
             array('header' => array('Content-Type' => $type))
         );
         
-        $response = json_decode($response);
+        if (empty($response)) {
+            return false;
+        }
+        
+        if (is_string($response)) {
+            $response = json_decode($response);
+        }
         
         if (!is_object($response)) {
             return false;
@@ -366,13 +408,21 @@ class CloudSearchSource extends DataSource {
             $params = substr($params, 1, -1);
         }
         
+        //debug($params);
+        
         $response = $this->Http->post(
             $url,
             $params,
             array('header' => array('Content-Type' => $type))
         );
         
-        $response = json_decode($response);
+        if (empty($response)) {
+            return false;
+        }
+        
+        if (is_string($response)) {
+            $response = json_decode($response);
+        }
         
         if (!is_object($response)) {
             return false;
