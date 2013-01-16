@@ -105,8 +105,43 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
+        //debug(__FUNCTION__);
         //debug(func_get_args());
-        return true;
+        
+        if ($fields == null) {
+            unset($fields, $values);
+            $fields = array_keys($model->data);
+            $values = array_values($model->data);
+        }
+        
+        if ($fields !== null && $values !== null) {
+            $data = array_combine($fields, $values);
+        } else {
+            $data = $model->data;
+        }
+        
+        if (empty($data['id'])) {
+            $id = uniqid();
+        } else {
+            $id = $data['id'];
+            unset($data['id']);
+        }
+        
+        $params[] = array(
+            'type' => 'add',
+            'id' => $id,
+            'version' => time(),
+            'lang' => 'en',
+            'fields' => $data
+        );
+        $results = $this->document($params);
+        
+        if ($results['status'] == 'success') {
+            return true;
+        } else {
+            return false;
+        }
+        
     }
     
     /**
@@ -128,16 +163,18 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
+        //debug(__FUNCTION__);
+        //debug(func_get_args());
         
         extract($query);
         
         $key = $model->alias .'.id';
-        if (sizeof($conditions) == 1 and isset($conditions[$key])) {
+        if (sizeof($conditions) == 1 && isset($conditions[$key])) {
             $conditions['bq'] = "docid:'{$conditions[$key]}'";
             unset($conditions[$key]);
         }
         
-        if (empty($conditions['q']) and empty($conditions['bq'])) {
+        if (empty($conditions['q']) && empty($conditions['bq'])) {
             trigger_error(__('Invalid call empty query missing q/bq keys', true));
         }
         
@@ -145,11 +182,11 @@ class CloudSearchSource extends DataSource {
             $conditions['size'] = 1;
         }
         
-        if (!empty($page) and $page > 1) {
+        if (!empty($page) && $page > 1) {
             $conditions['start'] = $page;
         }
         
-        $results = $this->parseSearchResponse($this->search($conditions));
+        $results = $this->search($conditions);
         
         if ($model->findQueryType == 'count') {
             return array('0'=>array('0'=>array('count'=>count($results))));
@@ -176,13 +213,15 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
-        // debug(__FUNCTION__);
-        // debug(func_get_args());
+        //debug(__FUNCTION__);
+        //debug(func_get_args());
+        
         if ($fields !== null && $values !== null) {
             $data = array_combine($fields, $values);
         } else {
             $data = $model->data;
         }
+        
         $id = $data['id'];
         unset($data['id']);
         
@@ -193,10 +232,13 @@ class CloudSearchSource extends DataSource {
             'lang' => 'en',
             'fields' => $data
         );
-        $response = $this->document($params);
-        debug(h($response));
+        $results = $this->document($params);
         
-        return true;
+        if (!empty($results['status']) && $results['status'] == 'success') {
+            return true;
+        } else {
+            return false;
+        }
     }
     
     /**
@@ -214,7 +256,31 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
+        //debug(__FUNCTION__);
         //debug(func_get_args());
+        
+        if (sizeof($conditions) > 1) {
+            trigger_error(__('Conditional delete are not supported yet...', true));
+        }
+        
+        if (sizeof($conditions) === 1 && empty($conditions[$model->alias.'.id'])) {
+            trigger_error(__('Document ID is required for delete', true));
+        }
+        
+        $params[] = array(
+            'type' => 'delete',
+            'id' => $conditions[$model->alias.'.id'],
+            'version' => time()
+        );
+        
+        $results = $this->document($params);
+        
+        if (!empty($results['status']) && $results['status'] == 'success') {
+            return true;
+        } else {
+            return false;
+        }
+        
     }
     
     /**
@@ -237,7 +303,6 @@ class CloudSearchSource extends DataSource {
         trigger_error(__('Invalid method call: '.$method, true));
     }
     
-    
     public function findBy($method = null, $params = array(), &$model = null) {
         debug(func_get_args());
         return true;
@@ -259,11 +324,21 @@ class CloudSearchSource extends DataSource {
             $this->config['search_endpoint'],
             $this->config['api_version']
         );
-        return $this->Http->get(
+        $response = $this->Http->get(
             $url,
             $params,
             array('header' => array('Content-Type' => $type))
         );
+        
+        $response = json_decode($response);
+        
+        if (!is_object($response)) {
+            return false;
+        }
+        
+        // handle errors here
+        
+        return $this->_toArray($response->hits->hit);
     }
     
     /**
@@ -288,15 +363,25 @@ class CloudSearchSource extends DataSource {
         // "Operations cannot be JSON arrays (near operation with index 1)"
         // this fix it, removing the initial json array wrap
         if (strpos($params, '[[') === 0) {
-            debug('removing');
             $params = substr($params, 1, -1);
         }
-        debug($params);
-        return $this->Http->post(
+        
+        $response = $this->Http->post(
             $url,
             $params,
             array('header' => array('Content-Type' => $type))
         );
+        
+        $response = json_decode($response);
+        
+        if (!is_object($response)) {
+            return false;
+        }
+        
+        // handle errors here
+        
+        return $this->_toArray($response);
+        
     }
     
     /**
@@ -307,7 +392,7 @@ class CloudSearchSource extends DataSource {
      * @return array Returns converted array to DynamoDB format of conditions.
      * @since 0.1
      */
-    public function conditions($conditions = array()) {
+    public function _conditions($conditions = array()) {
         
         if (empty($conditions)) {
             return array();
@@ -336,31 +421,6 @@ class CloudSearchSource extends DataSource {
         // }
         debug($conditions);
         return $conditions;
-    }
-    
-    public function parseSearchResponse($response = null) {
-        
-        $response = json_decode($response);
-        
-        if (!is_object($response)) {
-            return false;
-        }
-        
-        // handle errors here
-        
-        return $this->_toArray($response->hits->hit);
-        
-    }
-    
-    public function parseDocumentResponse($response = null) {
-        
-        $response = json_decode($response);
-        
-        if (!is_object($response)) {
-            return false;
-        }
-        
-        // handle errors here
     }
     
     /**

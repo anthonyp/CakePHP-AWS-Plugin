@@ -634,30 +634,31 @@ class MovieTestCase extends CakeTestCase {
     // //     
     // // }
     // 
-    // public function testCreate() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $id = uniqid();
-    //     $data = array(
-    //         'title' => 'Movie '.$id,
-    //         'director' => 'CakePHP, PHP',
-    //         'genre' => array('Programming', 'Data'),
-    //         'actor' => array('CloudSearch', 'AWS Plugin')
-    //     );
-    //     
-    //     $response = $this->Movie->create($this->Movie, array_keys($data), array_values($data));
-    //     debug($response);
-    //     
-    // }
+    
+    public function testCreate() {
+        
+        $skip = $this->skipIf(
+            $this->skipCakephpApiTests,
+            'testing CakePHP API '. __FUNCTION__
+        );
+        if ($skip) {
+            return;
+        }
+        
+        $id = uniqid();
+        $data = array(
+            'id' => $id,
+            'title' => 'Movie '.$id,
+            'director' => 'CakePHP, PHP',
+            'genre' => array('Programming', 'Data'),
+            'actor' => array('CloudSearch', 'AWS Plugin')
+        );
+        
+        $this->assertTrue($this->Movie->save($data));
+        
+        // @todo test error
+        
+    }
     
     public function testRead() {
         
@@ -670,7 +671,12 @@ class MovieTestCase extends CakeTestCase {
         }
         
         $result = $this->Movie->read(null, 'tt1408101');
-        debug($result);
+        $expected = array(
+            'id' => 'tt1408101'
+        );
+        $this->assertEqual($result, $expected);
+        
+        // @todo test error
         
     }
     
@@ -684,16 +690,14 @@ class MovieTestCase extends CakeTestCase {
             return;
         }
         
-        debug(__FUNCTION__);
-        
         $data = array(
             'id' => 'tt1408101',
             'title' => 'Untitled Star Trek Sequel ',
         );
         
-        //$response = $this->Movie->save($data, array('validate'=>false));
-        $response = $this->Movie->save($data);
-        debug($response);
+        $this->assertTrue($this->Movie->save($data));
+        
+        // @todo test error
         
     }
     
@@ -707,25 +711,6 @@ class MovieTestCase extends CakeTestCase {
             return;
         }
         
-        debug(__FUNCTION__);
-        
-        $response = $this->Movie->delete(uniqid());
-        debug($response);
-        
-    }
-    
-    public function testSave() {
-        
-        $skip = $this->skipIf(
-            $this->skipCakephpApiTests,
-            'testing CakePHP API '. __FUNCTION__
-        );
-        if ($skip) {
-            return;
-        }
-        
-        debug(__FUNCTION__);
-        
         $id = uniqid();
         $data = array(
             'id' => $id,
@@ -735,10 +720,40 @@ class MovieTestCase extends CakeTestCase {
             'actor' => array('CloudSearch', 'AWS Plugin')
         );
         
-        $response = $this->Movie->save($data);
-        debug($response);
+        $this->assertTrue($this->Movie->save($data));
+        
+        // delay 10 seconds before can be searched
+        sleep(10);
+        
+        $this->assertTrue($this->Movie->delete($id));
         
     }
+    
+    // public function testSave() {
+    //     
+    //     $skip = $this->skipIf(
+    //         $this->skipCakephpApiTests,
+    //         'testing CakePHP API '. __FUNCTION__
+    //     );
+    //     if ($skip) {
+    //         return;
+    //     }
+    //     
+    //     debug(__FUNCTION__);
+    //     
+    //     $id = uniqid();
+    //     $data = array(
+    //         'id' => $id,
+    //         'title' => 'Movie '.$id,
+    //         'director' => 'CakePHP, PHP',
+    //         'genre' => array('Programming', 'Data'),
+    //         'actor' => array('CloudSearch', 'AWS Plugin')
+    //     );
+    //     
+    //     $response = $this->Movie->save($data);
+    //     debug($response);
+    //     
+    // }
     
     // public function testSaveAll() {
     //     
