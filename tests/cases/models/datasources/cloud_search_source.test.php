@@ -2,7 +2,7 @@
 /**
  * CloudSearch DataSource Test File
  *
- * Copyright (c) 2012 Everton Yoshitani
+ * Copyright (c) 2013 Everton Yoshitani
  *
  * Distributed under the terms of the MIT License.
  * Redistributions of files must retain the above copyright notice.
@@ -13,7 +13,7 @@
  * @package     aws
  * @subpackage  aws.models.datasources
  * @since       0.1
- * @copyright   2012 Everton Yoshitani <everton@notreve.com>
+ * @copyright   2013 Everton Yoshitani <everton@notreve.com>
  * @license     http://www.opensource.org/licenses/mit-license.php The MIT License
  * @link        http://github.com/anthonyp/CakePHP-AWS-Plugin
  */
@@ -465,73 +465,97 @@ class CloudSearchTestCase extends CakeTestCase {
         // search?bq='star'
         // searches the term with boolean query
         $conditions = array(
-            
+            'bq'=>'star'
         );
         
         // search?q=star
         // searches the termwith query
         $conditions = array(
-            
+            'q' => 'star'
+        );
+        
+        $conditions = array(
+            'star'
         );
         
         // search?bq=title:'star'
         // searches the title field of each document and matches all 
         // documents whose titles contain the term star
         $conditions = array(
-            
+            'title' => 'star'
         );
         
-        // search?q=star|wars 
+        // search?q=star|wars
         // matches movies that contain either star or wars in 
         // the default search field.
         $conditions = array(
-            
+            array('star', 'wars')
         );
         
-        // search?bq=title:'story funny|underdog' 
+        $conditions = array(
+            'star|wars'
+        );
+        
+        // search?bq=title:'story funny|underdog'
         // matches movies that contain both the terms story and funny 
         // or the term underdog in the title field.
         $conditions = array(
-            
+            'title' => array('story funny', 'underdog')
         );
         
-        // search?bq=title:'red|white|blue' 
+        $conditions = array(
+            'title' => 'story funny|underdog'
+        );
+        
+        // search?bq=title:'red|white|blue'
         // matches movies that contain either red, white, or blue 
         // in the title field.
         $conditions = array(
-            
+            'title' => array('red', 'white', 'blue')
         );
         
-        // search?bq=actor:'"evans, chris"|"Garity, Troy"' 
+        $conditions = array(
+            'title' => 'red|white|blue'
+        );
+        
+        // search?bq=actor:'"evans, chris"|"Garity, Troy"'
         // matches movies that contain either the phrase evans, chris or 
         // the phrase Garity, Troy in the actor field.
         $conditions = array(
-            
+            'actor' => array('evans, chris', 'Garity, Troy')
         );
         
-        // search?bq='title:-star+war|world' 
+        $conditions = array(
+            'actor' => '"evans, chris"|"Garity, Troy"'
+        );
+        
+        // search?bq='title:-star+war|world'
         // matches movies whose titles do not contain star, but do 
         // contain either war or world.
         $conditions = array(
-            
+            'title' => array('-star+war', 'world')
+        );
+        
+        $conditions = array(
+            'title' => '-star+war|world'
         );
         
         // search?bq=title:'star*'&return-fields=title
         // matches wildcards in text searches
         $conditions = array(
-            
+            'title' => 'star*'
         );
         
         // search?q="with love"
         // matches phrases in text fields
         $conditions = array(
-            
+            'with love'
         );
         
         // search?bq='"with love"'
         // matches phrases in text fields
         $conditions = array(
-            
+            '"with love"'
         );
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.literal.html
@@ -539,7 +563,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
         // search?bq=genre:'sci-fi'
         $conditions = array(
-            
+            'genre' => 'sci-fi'
+        );
+        
+        $conditions = array(
+            'genre' => array('sci-fi')
         );
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
@@ -547,135 +575,313 @@ class CloudSearchTestCase extends CakeTestCase {
         
         // search?bq=year:2010
         $conditions = array(
-            
+            'year' => 2010
         );
         
         // search?bq=year:2008..2010
         $conditions = array(
-            
+            'year' => array(2008, 2010)
+        );
+        
+        $conditions = array(
+            'year' => '2008..2010'
         );
         
         // search?bq=year:2002..
         $conditions = array(
-            
+            'year' => array(2002, '..')
+        );
+        
+        $conditions = array(
+            'year' => '2002..'
         );
         
         //search?bq=year:..1970
         $conditions = array(
-            
+            'year' => array('..', 1970)
+        );
+        
+        $conditions = array(
+            'year' => '..1970'
         );
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
         // boolean search conditions
         // search?bq=(and title:'star' genre:'drama')
         $conditions = array(
-            
+            'and' => array('title'=>'star', 'genre'=>'drama')
+        );
+        
+        $conditions = array(
+            '(and title:\'star\' genre:\'drama\')'
         );
         
         // search?bq=(or title:'star' (not title:'wars'))
         $conditions = array(
-            
+            'or' => array('title'=>'star', array('not'=>array('title'=>'wars')))
+        );
+        
+        $conditions = array(
+            'or' => array('title'=>'star', '(not title:\'wars\')')
         );
         
         // search?bq=(or title:'star' title:'-wars')
         $conditions = array(
-            
+            'or' => array('title'=>'star', 'title'=>'-wars')
+        );
+        
+        $conditions = array(
+            'or' => array('title:\'star\' title:\'-wars\'')
         );
         
         // search?bq=(or title:'star' (not title:'wars'))
         $conditions = array(
-            
+            'or' => array('title'=>'star', array('not'=>array('title'=>'wars')))
+        );
+        
+        $conditions = array(
+            'or' => array('title'=>'star', '(not title:\'wars\')')
         );
         
     }
     
     /**
-     * Test Getting Results as XML
+     * Test getting results as XML
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/gettingxmlresults.html
      * @return void
      */
     public function testGettingResultsAsXML() {
         
+        // search?q=star+wars&results-type=xml
+        $query = array(
+            'conditions' => array(
+                'title' => '-star+war|world'
+            ),
+            'results-type' => 'xml'
+        );
+        
     }
     
     /**
-     * Test Paginating Results
+     * Test paginating results
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/pagination.html
      * @return void
      */
     public function testPaginatingResults() {
         
+        // search?q=-star&start=10
+        $query = array(
+            'conditions' => array('-star'),
+            'start' => 10
+        );
+        
+        // search?q=-star&size=25
+        $query = array(
+            'conditions' => array('-star'),
+            'size' => 25
+        );
+        
+        // search?q=-star&size=25&start=50
+        $query = array(
+            'conditions' => array('-star'),
+            'size' => 25,
+            'start' => 50
+        );
+        
     }
     
     /**
-     * Test Retrieving Data From Index Fields
+     * Test retrieving data from index fields
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/retrievingdata.html
      * @return void
      */
     public function testRetrievingDataFromIndexFields() {
         
+        // search?q=star+wars&return-fields=actor,title,text_relevance
+        $query = array(
+            'conditions' => array('star', '+wars'),
+            'return-fields' => array('actor', 'title', 'text_relevance')
+        );
+        
     }
     
     /**
-     * Test Sorting Results
+     * Test sorting results
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/sortingresults.html
      * @return void
      */
     public function testSortResults() {
         
+        // search?q=star+wars&return-fields=title&rank=title
+        $query = array(
+            'conditions' => array('star', '+wars'),
+            'return-fields' => array('title'),
+            'rank' => 'title'
+        );
+        
+        // search?q=star+wars&rank=-title
+        $query = array(
+            'conditions' => array('star', '+wars'),
+            'rank' => '-title'
+        );
+        
+        // search?q=star+wars&return-fields=title,year&rank=-year
+        $query = array(
+            'conditions' => array('star', '+wars'),
+            'return-fields' => array('title', 'year'),
+            'rank' => '-year'
+        );
+        
     }
     
     /**
-     * Test Getting Facet Information for Text and Literal Fields
+     * Test getting facet information for text and literal fields
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.text.html
      * @return void
      */
     public function testGettingFacetInformationForTextAndLiteralFields() {
         
+        // search?bq=title:'star'&facet=genre&facet-genre-top-n=5
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'genre',
+            'facet-genre-top-n' => 5
+        );
+        
     }
     
     /**
-     * Test Getting Facet Information for Uint Fields
+     * Test getting facet information for uint fields
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.uint.html
      * @return void
      */
     public function testGettingFacetInformationForUintFields() {
         
+        // "facets":{"year":{"min":1974,"max":2012}}
+        
     }
     
     /**
-     * Test Getting Facet Information for Particular Values
+     * Test getting facet information for particular values
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.constraints.html
      * @return void
      */
     public function testGettingFacetInformationForParticularValues() {
         
+        // search?q=star&facet=genre&facet-genre-constraints='Drama','Sci-Fi'
+        $query = array(
+            'conditions' => array('star'),
+            'facet' => 'genre',
+            'facet-genre-constraints' => array('Drama', 'Sci-Fi')
+        );
+        
+        // search?q=star&facet=year&facet-year-constraints=2000,2001,2002..2004,2005..
+        $query = array(
+            'conditions' => array('star'),
+            'facet' => 'year',
+            'facet-year-constraints' => array(2000,2001,'2002..2004','2005')
+        );
+        
     }
     
     /**
-     * Sorting Facet Information
+     * Test sorting facet information
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.sorting.html
      * @return void
      */
     public function testSortingFacetInformation() {
         
+        // search?bq=title:'star'&facet=genre&facet-genre-sort=alpha
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'genre',
+            'facet-genre-sort' => 'alpha'
+        );
+        
+        // search?bq=title:'star'&facet=genre&facet-genre-sort=-max(text_relevance)
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'genre',
+            'facet-genre-sort' => '-max(text_relevance)'
+        );
+        
+        // search?bq='state'&facet=chief&facet-chief-sort=sum(majvotes)
+        $query = array(
+            'conditions' => array('state'),
+            'facet' => 'chief',
+            'facet-chief-sort' => 'sum(majvotes)'
+        );
+        
     }
     
     /**
-     * Test ranking customization?
+     * Test other face queries
+     *
+     * @return void
+     */
+    public function testOtherFacetQueries() {
+        
+        // search?q=star&facet=actor,genre&facet-actor-top-n=10
+        // &facet-genre-top-n=5&size=5&results-type=xml
+        $query = array(
+            'conditions' => array('star'),
+            'facet' => array('actor', 'genre'),
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        
+        // search?bq=(and 'star' actor:'William Shatner')&facet=actor,genre
+        // &facet-actor-top-n=10&facet-genre-top-n=5&size=5
+        // &results-type=xml
+        $query = array(
+            'conditions' => array('and'=>array('actor'=>'William Shatner')),
+            'facet' => array('actor', 'genre'),
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        
+        // search?bq=(and 'star' actor:'William Shatner' actor:'Adamson, Joseph')
+        // &return-fields=title&facet=actor,genre&facet-actor-top-n=10
+        // &facet-genre-top-n=5&size=5&results-type=xml
+        $query = array(
+            'conditions' => array(
+                'and' => array(
+                    'star',
+                    'actor' => 'William Shatner',
+                    'actor' => 'Adamson, Joseph'
+                )
+            ),
+            'return-fields' => 'title',
+            'facet' => array('actor', 'genre'),
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        
+    }
+    
+    /**
+     * Test ranking customisation
      *
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/tuneranking.html
      * @return void
      */
-     public function testRankingCustomization() {
+     public function testRankingCustomisation() {
+         
+         
          
      }
      
