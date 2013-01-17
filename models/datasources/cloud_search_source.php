@@ -443,33 +443,64 @@ class CloudSearchSource extends DataSource {
      */
     public function _conditions($conditions = array()) {
         
-        if (empty($conditions)) {
-            return array();
-        }
+        debug($conditions);
         
-        // foreach($conditions as $field=>$value) {
-        //     unset($conditions[$field]);
-        //     // does not support OR
-        //     if ($field == 'OR') {
-        //         continue;
-        //     }
-        //     $field = array_pop(explode('.', $field));
-        //     if (strpos($field, ' ') === false) {
-        //         $operator = '=';
-        //     } else {
-        //         list($field, $operator) = explode(' ', $field);
-        //     }
-        //     $operators = array('AND', 'OR', 'NOT');
-        //     if (!in_array($operator, $operators)) {
-        //         continue;
-        //     }
-        //     $conditions[$field] = array(
-        //         'operator' => $operators[$operator],
-        //         'value' => $value
-        //     );
-        // }
+        foreach($conditions as $field=>$value) {
+            unset($conditions[$field]);
+            // does not support OR
+            if ($field == 'OR') {
+                continue;
+            }
+            $field = array_pop(explode('.', $field));
+            if (strpos($field, ' ') === false) {
+                $operator = '=';
+            } else {
+                list($field, $operator) = explode(' ', $field);
+            }
+            $operators = array('AND', 'OR', 'NOT');
+            if (!in_array($operator, $operators)) {
+                continue;
+            }
+            $conditions[$field] = array(
+                'operator' => $operators[$operator],
+                'value' => $value
+            );
+        }
         debug($conditions);
         return $conditions;
+    }
+    
+    public function _query($query = array()) {
+        
+        foreach($query as $key=>$value) {
+            
+            // facet
+            if ($key == 'facet' && is_array($value)) {
+                $query['facet'] = join(',', $value);
+            }
+            
+            // facet-FIELD-constrains
+            if (preg_match('/^facet-(.+?)-constrains/', $key)) {
+                if (is_array($value) && (sizeof($value) == 2) 
+                    && is_integer($value[0]) && is_integer($value[1])) {
+                        $query[$key] = $value[0] .'..'. $value[1];
+                } else {
+                    foreach($value as $k=>$v) {
+                        $value[$k] = '\''. $v .'\'';
+                    }
+                    $query[$key] = join(',', $value);
+                }
+            }
+            
+            // return-fields
+            if ($key == 'return-fields' && is_array($value)) {
+                $query['return-fields'] = join(',', $value);
+            }
+            
+        }
+        
+        return $query;
+        
     }
     
     /**

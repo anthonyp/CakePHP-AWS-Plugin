@@ -455,14 +455,228 @@ class CloudSearchTestCase extends CakeTestCase {
     }
     
     /**
-     * Test conditions
+     * Test searching text fields conditions
      *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.text.html
      * @return void
      */
-    public function testConditions() {
+    public function testSearchingTextFieldsConditions() {
         
+        // search?bq='star'
+        // searches the term with boolean query
+        $conditions = array(
+            
+        );
         
+        // search?q=star
+        // searches the termwith query
+        $conditions = array(
+            
+        );
+        
+        // search?bq=title:'star'
+        // searches the title field of each document and matches all 
+        // documents whose titles contain the term star
+        $conditions = array(
+            
+        );
+        
+        // search?q=star|wars 
+        // matches movies that contain either star or wars in 
+        // the default search field.
+        $conditions = array(
+            
+        );
+        
+        // search?bq=title:'story funny|underdog' 
+        // matches movies that contain both the terms story and funny 
+        // or the term underdog in the title field.
+        $conditions = array(
+            
+        );
+        
+        // search?bq=title:'red|white|blue' 
+        // matches movies that contain either red, white, or blue 
+        // in the title field.
+        $conditions = array(
+            
+        );
+        
+        // search?bq=actor:'"evans, chris"|"Garity, Troy"' 
+        // matches movies that contain either the phrase evans, chris or 
+        // the phrase Garity, Troy in the actor field.
+        $conditions = array(
+            
+        );
+        
+        // search?bq='title:-star+war|world' 
+        // matches movies whose titles do not contain star, but do 
+        // contain either war or world.
+        $conditions = array(
+            
+        );
+        
+        // search?bq=title:'star*'&return-fields=title
+        // matches wildcards in text searches
+        $conditions = array(
+            
+        );
+        
+        // search?q="with love"
+        // matches phrases in text fields
+        $conditions = array(
+            
+        );
+        
+        // search?bq='"with love"'
+        // matches phrases in text fields
+        $conditions = array(
+            
+        );
+        
+        // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.literal.html
+        // searching uint fields conditions
+        
+        // search?bq=genre:'sci-fi'
+        $conditions = array(
+            
+        );
+        
+        // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
+        // searching uint fields conditions
+        
+        // search?bq=year:2010
+        $conditions = array(
+            
+        );
+        
+        // search?bq=year:2008..2010
+        $conditions = array(
+            
+        );
+        
+        // search?bq=year:2002..
+        $conditions = array(
+            
+        );
+        
+        //search?bq=year:..1970
+        $conditions = array(
+            
+        );
+        
+        // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
+        // boolean search conditions
+        // search?bq=(and title:'star' genre:'drama')
+        $conditions = array(
+            
+        );
+        
+        // search?bq=(or title:'star' (not title:'wars'))
+        $conditions = array(
+            
+        );
+        
+        // search?bq=(or title:'star' title:'-wars')
+        $conditions = array(
+            
+        );
+        
+        // search?bq=(or title:'star' (not title:'wars'))
+        $conditions = array(
+            
+        );
         
     }
     
+    /**
+     * Test Getting Results as XML
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/gettingxmlresults.html
+     * @return void
+     */
+    public function testGettingResultsAsXML() {
+        
+    }
+    
+    /**
+     * Test Paginating Results
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/pagination.html
+     * @return void
+     */
+    public function testPaginatingResults() {
+        
+    }
+    
+    /**
+     * Test Retrieving Data From Index Fields
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/retrievingdata.html
+     * @return void
+     */
+    public function testRetrievingDataFromIndexFields() {
+        
+    }
+    
+    /**
+     * Test Sorting Results
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/sortingresults.html
+     * @return void
+     */
+    public function testSortResults() {
+        
+    }
+    
+    /**
+     * Test Getting Facet Information for Text and Literal Fields
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.text.html
+     * @return void
+     */
+    public function testGettingFacetInformationForTextAndLiteralFields() {
+        
+    }
+    
+    /**
+     * Test Getting Facet Information for Uint Fields
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.uint.html
+     * @return void
+     */
+    public function testGettingFacetInformationForUintFields() {
+        
+    }
+    
+    /**
+     * Test Getting Facet Information for Particular Values
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.constraints.html
+     * @return void
+     */
+    public function testGettingFacetInformationForParticularValues() {
+        
+    }
+    
+    /**
+     * Sorting Facet Information
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.sorting.html
+     * @return void
+     */
+    public function testSortingFacetInformation() {
+        
+    }
+    
+    /**
+     * Test ranking customization?
+     *
+     * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/tuneranking.html
+     * @return void
+     */
+     public function testRankingCustomization() {
+         
+     }
+     
 }
