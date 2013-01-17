@@ -176,14 +176,21 @@ class CloudSearchTestCase extends CakeTestCase {
         $this->CloudSearch->Http->setReturnValueAt(4, 'post', $response);
         $this->assertFalse($this->CloudSearch->create($this->Model, $fields));
         
-        // $data['id'] = 'tt1000001';
-        // $data['version'] = time();
-        // $this->Model->data = $data;
-        // $expected = '[{"type":"add","id":"'. $data['id'] .'","version1":'. $data['version'] .',"lang":"en","fields":{"title":"Movie '. $data['id'] .'","director":"CakePHP, PHP","genre":["Programming","Data"],"actor":["CloudSearch","AWS Plugin"]}}]';
-        // debug($this->Model->data);
-        // debug($expected);
-        // $this->CloudSearch->Http->expect('post', array('*', $expected, '*'));
-        // $this->CloudSearch->create($this->Model);
+        $id = uniqid();
+        $version = time();
+        $data = array(
+            'id' => $id,
+            'version' => $version,
+            'title' => 'Movie '.$id,
+            'director' => 'CakePHP, PHP',
+            'genre' => array('Programming', 'Data'),
+            'actor' => array('CloudSearch', 'AWS Plugin')
+        );
+        $this->Model->data = $data;
+        $expected = '[{"type":"add","id":"'. $data['id'] .'","version":'. $data['version'] .',"lang":"en","fields":{"title":"Movie '. $data['id'] .'","director":"CakePHP, PHP","genre":["Programming","Data"],"actor":["CloudSearch","AWS Plugin"]}}]';
+        $this->CloudSearch->Http->expectAt(5, 'post', array('*', $expected, '*'));
+        $this->CloudSearch->create($this->Model);
+        
     }
     
     /**
@@ -386,25 +393,66 @@ class CloudSearchTestCase extends CakeTestCase {
      *
      * @return void
      */
-    // public function testDocument() {
-    //     
-    //     $this->expectError(__('Invalid document parameters', true));
-    //     $this->CloudSearch->document();
-    //     
-    //     $url = sprintf(
-    //         'https://%s/%s/documents/batch',
-    //         $this->config['document_endpoint'],
-    //         $this->config['api_version']
-    //     );
-    //     $params = array('q' => 'Die Hard');
-    //     $expected = 'document_result';
-    //     $request = array('header' => array('Content-Type' => 'application/json'));
-    //     $this->CloudSearch->Http->setReturnValue('post', $expected);
-    //     $this->CloudSearch->Http->expect('post', array($url, json_encode($params), $request));
-    //     $result = $this->CloudSearch->document($params);
-    //     $this->assertEqual($expected, $result);
-    //     
-    // }
+    public function testDocument() {
+        
+        $this->expectError(__('Invalid document parameters', true));
+        $this->CloudSearch->document();
+        
+        $url = sprintf(
+            'https://%s/%s/documents/batch',
+            $this->config['document_endpoint'],
+            $this->config['api_version']
+        );
+        $params = array(
+            'type' => 'delete',
+            'id' => 'tt0000001',
+            'version' => 1
+        );
+        $response = '{"status": "success", "adds": 0, "deletes": 1}';
+        $request = array('header' => array('Content-Type' => 'application/json'));
+        $this->CloudSearch->Http->setReturnValueAt(1, 'post', $response);
+        $this->CloudSearch->Http->expectAt(1, 'post', array($url, json_encode($params), $request));
+        $result = $this->CloudSearch->document($params);
+        $expected = array(
+            'status' => 'success',
+            'adds' => 0,
+            'deletes' => 1
+        );
+        $this->assertEqual($expected, $result);
+        
+        $params = array(
+            'type' => 'delete',
+            'id' => 'tt0000002',
+            'version' => 1
+        );
+        $response = 'this_is_not_an_object';
+        $this->CloudSearch->Http->setReturnValueAt(2, 'post', $response);
+        $this->assertFalse($this->CloudSearch->document($params));
+        
+        $params = array();
+        $params[] = array(
+            'type' => 'delete',
+            'id' => 'tt0000003',
+            'version' => 1
+        );
+        $params[] = array(
+            'type' => 'delete',
+            'id' => 'tt0000004',
+            'version' => 1
+        );
+        $response = '{"status": "success", "adds": 0, "deletes": 2}';
+        $request = array('header' => array('Content-Type' => 'application/json'));
+        $this->CloudSearch->Http->setReturnValueAt(3, 'post', $response);
+        $this->CloudSearch->Http->expectAt(3, 'post', array($url, json_encode($params), $request));
+        $result = $this->CloudSearch->document(array($params));
+        $expected = array(
+            'status' => 'success',
+            'adds' => 0,
+            'deletes' => 2
+        );
+        $this->assertEqual($expected, $result);
+        
+    }
     
     /**
      * Test conditions

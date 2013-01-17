@@ -399,6 +399,7 @@ class CloudSearchSource extends DataSource {
             $this->config['document_endpoint'],
             $this->config['api_version']
         );
+        
         $params = json_encode($params);
         
         // Amazon keep respondig with this error message:
@@ -407,8 +408,6 @@ class CloudSearchSource extends DataSource {
         if (strpos($params, '[[') === 0) {
             $params = substr($params, 1, -1);
         }
-        
-        //debug($params);
         
         $response = $this->Http->post(
             $url,
