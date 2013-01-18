@@ -464,19 +464,25 @@ class CloudSearchTestCase extends CakeTestCase {
         
         // search?bq='star'
         // searches the term with boolean query
-        $conditions = array(
-            'bq'=>'star'
-        );
+        $conditions = array('bq'=>'star');
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, $conditions);
         
         // search?q=star
         // searches the termwith query
         $conditions = array(
             'q' => 'star'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, $conditions);
         
-        $conditions = array(
-            'star'
-        );
+        $conditions = 'star';
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('q'=>'star'));
+        
+        $conditions = array('star');
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'star'));
         
         // search?bq=title:'star'
         // searches the title field of each document and matches all 
@@ -484,6 +490,8 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'title' => 'star'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'title:star'));
         
         // search?q=star|wars
         // matches movies that contain either star or wars in 
@@ -491,10 +499,14 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             array('star', 'wars')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'star|wars'));
         
         $conditions = array(
             'star|wars'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'star|wars'));
         
         // search?bq=title:'story funny|underdog'
         // matches movies that contain both the terms story and funny 
@@ -502,10 +514,14 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'title' => array('story funny', 'underdog')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"'story funny|underdog'"));
         
         $conditions = array(
             'title' => 'story funny|underdog'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"title:'story funny|underdog'"));
         
         // search?bq=title:'red|white|blue'
         // matches movies that contain either red, white, or blue 
@@ -513,10 +529,14 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'title' => array('red', 'white', 'blue')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'red|white|blue'));
         
         $conditions = array(
-            'title' => 'red|white|blue'
+            'title' => "'red|white|blue'"
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"title:'red|white|blue'"));
         
         // search?bq=actor:'"evans, chris"|"Garity, Troy"'
         // matches movies that contain either the phrase evans, chris or 
@@ -524,10 +544,14 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'actor' => array('evans, chris', 'Garity, Troy')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"'evans, chris|Garity, Troy'"));
         
         $conditions = array(
             'actor' => '"evans, chris"|"Garity, Troy"'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'actor:\'"evans, chris"|"Garity, Troy"\''));
         
         // search?bq='title:-star+war|world'
         // matches movies whose titles do not contain star, but do 
@@ -535,40 +559,67 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'title' => array('-star+war', 'world')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'title:-star+war|world'));
+        debug($result);
         
         $conditions = array(
             'title' => '-star+war|world'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'title:-star+war|world'));
         
         // search?bq=title:'star*'&return-fields=title
         // matches wildcards in text searches
         $conditions = array(
-            'title' => 'star*'
+            'title' => "'star*'"
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"title:'star*'"));
         
-        // search?q="with love"
+        // search?q='with love'
         // matches phrases in text fields
         $conditions = array(
             'with love'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"'with love'"));
         
-        // search?bq='"with love"'
+        // search?bq="with love"
         // matches phrases in text fields
         $conditions = array(
             '"with love"'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'"with love"'));
+        //debug($result);
+        
+        // search?bq='with love'
+        // matches phrases in text fields
+        $conditions = array(
+            "'with love'"
+        );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"'with love'"));
+        debug($result);
+        
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.literal.html
         // searching uint fields conditions
         
-        // search?bq=genre:'sci-fi'
+        // search?bq=genre:'with love'
         $conditions = array(
-            'genre' => 'sci-fi'
+            'genre' => "'sci-fi action'"
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, "genre:'sci-fi action'");
+        debug($result);
         
         $conditions = array(
-            'genre' => array('sci-fi')
+            'genre' => array("'sci-fi'")
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>"'sci-fi'"));
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
         // searching uint fields conditions
@@ -577,33 +628,47 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'year' => 2010
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:2010'));
         
         // search?bq=year:2008..2010
         $conditions = array(
             'year' => array(2008, 2010)
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:2008..2010'));
         
         $conditions = array(
             'year' => '2008..2010'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:2008..2010'));
         
         // search?bq=year:2002..
         $conditions = array(
             'year' => array(2002, '..')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:2002..'));
         
         $conditions = array(
             'year' => '2002..'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:2002..'));
         
         //search?bq=year:..1970
         $conditions = array(
             'year' => array('..', 1970)
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:..1970'));
         
         $conditions = array(
             'year' => '..1970'
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual($result, array('bq'=>'year:..1970'));
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
         // boolean search conditions
@@ -611,37 +676,59 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'and' => array('title'=>'star', 'genre'=>'drama')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual(
+            $result,
+            array('bq'=>'(and title:star genre:drama)')
+        );
         
         $conditions = array(
             '(and title:\'star\' genre:\'drama\')'
+        );
+        $result = $this->CloudSearch->_conditions($conditions);
+        $this->assertEqual(
+            $result,
+            array('bq'=>'(and title:star genre:drama)')
         );
         
         // search?bq=(or title:'star' (not title:'wars'))
         $conditions = array(
             'or' => array('title'=>'star', array('not'=>array('title'=>'wars')))
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        debug($result);
         
         $conditions = array(
             'or' => array('title'=>'star', '(not title:\'wars\')')
         );
+        // $result = $this->CloudSearch->_conditions($conditions);
+        // debug($result);
         
         // search?bq=(or title:'star' title:'-wars')
         $conditions = array(
             'or' => array('title'=>'star', 'title'=>'-wars')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        // debug($result);
         
         $conditions = array(
             'or' => array('title:\'star\' title:\'-wars\'')
         );
+        // $result = $this->CloudSearch->_conditions($conditions);
+        // debug($result);
         
         // search?bq=(or title:'star' (not title:'wars'))
         $conditions = array(
             'or' => array('title'=>'star', array('not'=>array('title'=>'wars')))
         );
+        // $result = $this->CloudSearch->_conditions($conditions);
+        // debug($result);
         
         $conditions = array(
             'or' => array('title'=>'star', '(not title:\'wars\')')
         );
+        $result = $this->CloudSearch->_conditions($conditions);
+        debug($result);
         
     }
     

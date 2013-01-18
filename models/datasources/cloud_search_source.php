@@ -441,33 +441,180 @@ class CloudSearchSource extends DataSource {
      * @return array Returns converted array to DynamoDB format of conditions.
      * @since 0.1
      */
-    public function _conditions($conditions = array()) {
+    public function _conditions($conditions = array(), $type = null, $debug = false) {
         
-        debug($conditions);
+        if ($debug) {
+            debug($conditions);
+        }
+        
+        $out = null;
+        
+        if (!$type && is_string($conditions)) {
+            return array('q' => $this->_encloseSingleQuote($conditions));
+        }
+        
+        if (!$type && $this->_isSingleConditionArray($conditions)) {
+            return array('bq' => $this->_encloseSingleQuote($conditions[0]));
+        }
+        
+        if (!$type) {
+            $type = 'bq';
+        }
         
         foreach($conditions as $field=>$value) {
-            unset($conditions[$field]);
-            // does not support OR
-            if ($field == 'OR') {
-                continue;
-            }
             $field = array_pop(explode('.', $field));
-            if (strpos($field, ' ') === false) {
-                $operator = '=';
-            } else {
-                list($field, $operator) = explode(' ', $field);
+            switch (true) {
+                
+                case $this->_isAnOperatorValue($value, $field):
+                    $out .= '('. $field;
+                    $value = $this->_conditions($value, 'recursive');
+                    if (is_array($value)) {
+                        $out .= join(' ', $value);
+                    } else {
+                        $out .= $value;
+                    }
+                    $out .= ')';
+                    break;
+                    
+                case $this->_isSingleConditionQueryOrBooleanQuery($field, $value):
+                    $type = $field;
+                    $out .= $this->_encloseSingleQuote($value);
+                    break;
+                    
+                case (is_string($value) || is_integer($value)):
+                    $value = $this->_encloseSingleQuote($value);
+                    if ($type == 'recursive') {
+                        $out .= ' ';
+                    }
+                    $out .= "{$field}:{$value}";
+                    break;
+                    
+                case $this->_isAnUintSearchRangeOfValues($value):
+                    $out .= "{$field}:{$value[0]}..{$value[1]}";
+                    break;
+                    
+                case $this->_isAnUintSearchOpenEndedValueAtStart($value):
+                    $out .= "{$field}:..{$value[1]}";
+                    break;
+                    
+                case $this->_isAnUintSearchOpenEndedValueAtEnd($value):
+                    $out .= "{$field}:{$value[0]}..";
+                    break;
+                    
+                default:
+                    if (is_array($value)) {
+                        $value = join('|', $value);
+                    }
+                    $out .= $this->_encloseSingleQuote($value);
+                    break;
             }
-            $operators = array('AND', 'OR', 'NOT');
-            if (!in_array($operator, $operators)) {
-                continue;
-            }
-            $conditions[$field] = array(
-                'operator' => $operators[$operator],
-                'value' => $value
-            );
         }
-        debug($conditions);
-        return $conditions;
+        
+        if ($debug) {
+            debug($out);
+        }
+        
+        if ($type == 'recursive') {
+            return $out;
+        } else {
+            return array($type=>$out);
+        }
+        
+    }
+    
+    public function _isSingleConditionArray($arr = array()) {
+        if (sizeof($arr) != 1) {
+            return false;
+        }
+        if (isset($arr['q'])) {
+            return false;
+        }
+        if (isset($arr['bq'])) {
+            return false;
+        }
+        if (!isset($arr[0])) {
+            return false;
+        }
+        if (is_array($arr[0])) {
+            return false;
+        }
+        return array_keys($arr) === range(0, count($arr) - 1);
+    }
+    
+    public function _isAnOperatorValue($value = null, $field = null) {
+        $operators = array('bq', 'q', 'and', 'or', 'not');
+        if (!is_array($value)) {
+            return false;
+        }
+        if (!in_array($field, $operators)) {
+            return false;
+        }
+        return true;
+    }
+    
+    public function _isSingleConditionQueryOrBooleanQuery($field = null, $value = null) {
+        if ($field !== 'q' && $field !== 'bq') {
+            return false;
+        }
+        if (is_array($value)) {
+            return false;
+        }
+        return true;
+    }
+    
+    public function _isAnUintSearchRangeOfValues($value = null) {
+        if (!is_array($value)) {
+            return false;
+        }
+        if (sizeof($value) !== 2) {
+            return false;
+        }
+        if (!is_integer($value[0])) {
+            return false;
+        }
+        if (!is_integer($value[1])) {
+            return false;
+        }
+        return true;
+    }
+    
+    public function _isAnUintSearchOpenEndedValueAtStart($value = null) {
+        if (!is_array($value)) {
+            return false;
+        }
+        if (sizeof($value) !== 2) {
+            return false;
+        }
+        if ($value[0] !== '..') {
+            return false;
+        }
+        if (!is_integer($value[1])) {
+            return false;
+        }
+        return true;
+    }
+    
+    public function _isAnUintSearchOpenEndedValueAtEnd($value = null) {
+        if (!is_array($value)) {
+            return false;
+        }
+        if (sizeof($value) !== 2) {
+            return false;
+        }
+        if (!is_integer($value[0])) {
+            return false;
+        }
+        if ($value[1] !== '..') {
+            return false;
+        }
+        return true;
+    }
+    
+    public function _encloseSingleQuote($value = null) {
+        if (strstr($value, ' ')) {
+                $value = "'{$value}'";
+        }
+        return $value;
     }
     
     public function _query($query = array()) {
