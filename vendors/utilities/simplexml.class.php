@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2010-2011 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2010-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@
 // CLASS
 
 /**
- * Wraps the underlying `SimpleXMLIterator` class with enhancements for rapidly traversing the DOM tree,
- * converting types, and comparisons.
+ * Wraps the underlying `SimpleXMLIterator` class with enhancements for rapidly traversing the
+ * DOM tree, converting types, and comparisons. You will need to be familiar with traversing
+ * objects with the PHP SimpleXML extension in order to use this class effectively. Also,
+ * CFResponse bodies are typically represented as CFSimpleXML objects.
  *
- * @version 2011.04.25
+ * @version 2012.05.31
  * @license See the included NOTICE.md file for more information.
  * @copyright See the included NOTICE.md file for more information.
  * @link http://aws.amazon.com/php/ PHP Developer Center
@@ -39,6 +41,11 @@ class CFSimpleXML extends SimpleXMLIterator
 	 * Stores the namespace URI to use in XPath queries.
 	 */
 	public $xml_ns_url;
+
+	/**
+	 * Stores whether or not the value is encoded.
+	 */
+	public $encoded = false;
 
 	/**
 	 * Catches requests made to methods that don't exist. Specifically, looks for child nodes via XPath.
@@ -75,6 +82,16 @@ class CFSimpleXML extends SimpleXMLIterator
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Gets the current XML node as a true string.
+	 *
+	 * @return string The current XML node as a true string.
+	 */
+	public function __toString()
+	{
+		return $this->to_string();
 	}
 
 	/**
@@ -144,13 +161,20 @@ class CFSimpleXML extends SimpleXMLIterator
 	 */
 	public function to_string()
 	{
-		return (string) $this;
+		$s = parent::__toString();
+
+		if ($this->attributes())
+		{
+			return json_decode(substr($s, 14));
+		}
+
+		return $s;
 	}
 
 	/**
-	 * Gets the current XML node as a true array.
+	 * Gets the current XML node as <CFArray>, a child class of PHP's <php:ArrayObject> class.
 	 *
-	 * @return array The current XML node as a true array.
+	 * @return CFArray The current XML node as a <CFArray> object.
 	 */
 	public function to_array()
 	{
@@ -211,5 +235,38 @@ class CFSimpleXML extends SimpleXMLIterator
 	public function contains($value)
 	{
 		return (stripos((string) $this, $value) !== false);
+	}
+
+	/**
+	 * Whether or not the current node matches the regular expression pattern.
+	 *
+	 * @param string $pattern (Required) The pattern to match the current node against.
+	 * @return boolean Whether or not the current node matches the pattern.
+	 */
+	public function matches($pattern)
+	{
+		return (bool) preg_match($pattern, (string) $this);
+	}
+
+	/**
+	 * Whether or not the current node starts with the compared value.
+	 *
+	 * @param string $value (Required) The value to compare the current node to.
+	 * @return boolean Whether or not the current node starts with the compared value.
+	 */
+	public function starts_with($value)
+	{
+		return $this->matches("@^$value@u");
+	}
+
+	/**
+	 * Whether or not the current node ends with the compared value.
+	 *
+	 * @param string $value (Required) The value to compare the current node to.
+	 * @return boolean Whether or not the current node ends with the compared value.
+	 */
+	public function ends_with($value)
+	{
+		return $this->matches("@$value$@u");
 	}
 }
