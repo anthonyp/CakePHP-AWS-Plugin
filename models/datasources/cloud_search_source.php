@@ -360,6 +360,9 @@ class CloudSearchSource extends DataSource {
             $this->config['api_version']
         );
         
+        debug($url);
+        debug(http_build_query($params));
+        
         $response = $this->Http->get(
             $url,
             $params,
@@ -408,6 +411,8 @@ class CloudSearchSource extends DataSource {
         if (strpos($params, '[[') === 0) {
             $params = substr($params, 1, -1);
         }
+        
+        debug($params);
         
         $response = $this->Http->post(
             $url,
@@ -505,7 +510,11 @@ class CloudSearchSource extends DataSource {
                     if (is_array($value)) {
                         $value = join('|', $value);
                     }
-                    $out .= $this->_encloseSingleQuote($value);
+                    if ($this->_isAssociativeArray($value)) {
+                        $out .= "{$field}:". $this->_encloseSingleQuote($value);
+                    } else {
+                        $out .= $this->_encloseSingleQuote($value);
+                    }
                     break;
             }
         }
@@ -617,17 +626,28 @@ class CloudSearchSource extends DataSource {
         return $value;
     }
     
+    public function _isAssociativeArray($arr = array()) {
+        if (!is_array($arr)) {
+            return false;
+        }
+        return array_keys($arr) === range(0, count($arr) - 1);
+    }
+    
     public function _query($query = array()) {
         
         foreach($query as $key=>$value) {
+            
+            if ($key == 'conditions') {
+                continue;
+            }
             
             // facet
             if ($key == 'facet' && is_array($value)) {
                 $query['facet'] = join(',', $value);
             }
             
-            // facet-FIELD-constrains
-            if (preg_match('/^facet-(.+?)-constrains/', $key)) {
+            // facet-FIELD-constraints
+            if (preg_match('/^facet-(.+?)-constraints/', $key)) {
                 if (is_array($value) && (sizeof($value) == 2) 
                     && is_integer($value[0]) && is_integer($value[1])) {
                         $query[$key] = $value[0] .'..'. $value[1];

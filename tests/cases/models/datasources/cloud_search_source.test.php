@@ -747,6 +747,8 @@ class CloudSearchTestCase extends CakeTestCase {
             ),
             'results-type' => 'xml'
         );
+        $results = $this->CloudSearch->_query($query);
+        $this->assertEqual($results, $query);
         
     }
     
@@ -763,12 +765,14 @@ class CloudSearchTestCase extends CakeTestCase {
             'conditions' => array('-star'),
             'start' => 10
         );
+        $this->assertEqual($this->CloudSearch->_query($query), $query);
         
         // search?q=-star&size=25
         $query = array(
             'conditions' => array('-star'),
             'size' => 25
         );
+        $this->assertEqual($this->CloudSearch->_query($query), $query);
         
         // search?q=-star&size=25&start=50
         $query = array(
@@ -776,6 +780,7 @@ class CloudSearchTestCase extends CakeTestCase {
             'size' => 25,
             'start' => 50
         );
+        $this->assertEqual($this->CloudSearch->_query($query), $query);
         
     }
     
@@ -792,6 +797,12 @@ class CloudSearchTestCase extends CakeTestCase {
             'conditions' => array('star', '+wars'),
             'return-fields' => array('actor', 'title', 'text_relevance')
         );
+        $expected = array(
+            'conditions' => array('star', '+wars'),
+            'return-fields' => 'actor,title,text_relevance'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
     }
     
@@ -809,12 +820,25 @@ class CloudSearchTestCase extends CakeTestCase {
             'return-fields' => array('title'),
             'rank' => 'title'
         );
+        $expected = array(
+            'conditions' => array('star', '+wars'),
+            'return-fields' => 'title',
+            'rank' => 'title'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?q=star+wars&rank=-title
         $query = array(
             'conditions' => array('star', '+wars'),
             'rank' => '-title'
         );
+        $expected = array(
+            'conditions' => array('star', '+wars'),
+            'rank' => '-title'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?q=star+wars&return-fields=title,year&rank=-year
         $query = array(
@@ -822,6 +846,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'return-fields' => array('title', 'year'),
             'rank' => '-year'
         );
+        $expected = array(
+            'conditions' => array('star', '+wars'),
+            'return-fields' => 'title,year',
+            'rank' => '-year'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
     }
     
@@ -839,6 +870,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'facet' => 'genre',
             'facet-genre-top-n' => 5
         );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'genre',
+            'facet-genre-top-n' => 5
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
     }
     
@@ -868,6 +906,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'facet' => 'genre',
             'facet-genre-constraints' => array('Drama', 'Sci-Fi')
         );
+        $expected = array(
+            'conditions' => array('star'),
+            'facet' => 'genre',
+            'facet-genre-constraints' => "'Drama','Sci-Fi'"
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?q=star&facet=year&facet-year-constraints=2000,2001,2002..2004,2005..
         $query = array(
@@ -875,6 +920,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'facet' => 'year',
             'facet-year-constraints' => array(2000,2001,'2002..2004','2005')
         );
+        $expected = array(
+            'conditions' => array('star'),
+            'facet' => 'year',
+            'facet-year-constraints' => "'2000','2001','2002..2004','2005'"
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
     }
     
@@ -892,6 +944,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'facet' => 'genre',
             'facet-genre-sort' => 'alpha'
         );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'genre',
+            'facet-genre-sort' => 'alpha'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?bq=title:'star'&facet=genre&facet-genre-sort=-max(text_relevance)
         $query = array(
@@ -899,6 +958,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'facet' => 'genre',
             'facet-genre-sort' => '-max(text_relevance)'
         );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'genre',
+            'facet-genre-sort' => '-max(text_relevance)'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?bq='state'&facet=chief&facet-chief-sort=sum(majvotes)
         $query = array(
@@ -906,6 +972,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'facet' => 'chief',
             'facet-chief-sort' => 'sum(majvotes)'
         );
+        $expected = array(
+            'conditions' => array('state'),
+            'facet' => 'chief',
+            'facet-chief-sort' => 'sum(majvotes)'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
     }
     
@@ -926,6 +999,16 @@ class CloudSearchTestCase extends CakeTestCase {
             'size' => 5,
             'results-type' => 'xml'
         );
+        $expected = array(
+            'conditions' => array('star'),
+            'facet' => 'actor,genre',
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?bq=(and 'star' actor:'William Shatner')&facet=actor,genre
         // &facet-actor-top-n=10&facet-genre-top-n=5&size=5
@@ -938,6 +1021,16 @@ class CloudSearchTestCase extends CakeTestCase {
             'size' => 5,
             'results-type' => 'xml'
         );
+        $expected = array(
+            'conditions' => array('and'=>array('actor'=>'William Shatner')),
+            'facet' => 'actor,genre',
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?bq=(and 'star' actor:'William Shatner' actor:'Adamson, Joseph')
         // &return-fields=title&facet=actor,genre&facet-actor-top-n=10
@@ -957,6 +1050,23 @@ class CloudSearchTestCase extends CakeTestCase {
             'size' => 5,
             'results-type' => 'xml'
         );
+        $expected = array(
+            'conditions' => array(
+                'and' => array(
+                    'star',
+                    'actor' => 'William Shatner',
+                    'actor' => 'Adamson, Joseph'
+                )
+            ),
+            'return-fields' => 'title',
+            'facet' => 'actor,genre',
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
     }
     
