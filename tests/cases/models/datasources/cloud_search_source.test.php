@@ -496,15 +496,7 @@ class CloudSearchTestCase extends CakeTestCase {
         // search?q=star|wars
         // matches movies that contain either star or wars in 
         // the default search field.
-        $conditions = array(
-            array('star', 'wars')
-        );
-        $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, array('bq'=>'star|wars'));
-        
-        $conditions = array(
-            'star|wars'
-        );
+        $conditions = array('star|wars');
         $result = $this->CloudSearch->_conditions($conditions);
         $this->assertEqual($result, array('bq'=>'star|wars'));
         
@@ -515,7 +507,7 @@ class CloudSearchTestCase extends CakeTestCase {
             'title' => array('story funny', 'underdog')
         );
         $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, array('bq'=>"'story funny|underdog'"));
+        $this->assertEqual($result, array('bq'=>"title:'story funny|underdog'"));
         
         $conditions = array(
             'title' => 'story funny|underdog'
@@ -530,7 +522,7 @@ class CloudSearchTestCase extends CakeTestCase {
             'title' => array('red', 'white', 'blue')
         );
         $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, array('bq'=>'red|white|blue'));
+        $this->assertEqual($result, array('bq'=>"title:red|white|blue"));
         
         $conditions = array(
             'title' => "'red|white|blue'"
@@ -545,7 +537,7 @@ class CloudSearchTestCase extends CakeTestCase {
             'actor' => array('evans, chris', 'Garity, Troy')
         );
         $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, array('bq'=>"'evans, chris|Garity, Troy'"));
+        $this->assertEqual($result, array('bq'=>"actor:'evans, chris|Garity, Troy'"));
         
         $conditions = array(
             'actor' => '"evans, chris"|"Garity, Troy"'
@@ -560,8 +552,7 @@ class CloudSearchTestCase extends CakeTestCase {
             'title' => array('-star+war', 'world')
         );
         $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, array('bq'=>'title:-star+war|world'));
-        debug($result);
+        $this->assertEqual($result, array('bq'=>"title:-star+war|world"));
         
         $conditions = array(
             'title' => '-star+war|world'
@@ -601,8 +592,6 @@ class CloudSearchTestCase extends CakeTestCase {
         );
         $result = $this->CloudSearch->_conditions($conditions);
         $this->assertEqual($result, array('bq'=>"'with love'"));
-        debug($result);
-        
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.literal.html
         // searching uint fields conditions
@@ -612,14 +601,13 @@ class CloudSearchTestCase extends CakeTestCase {
             'genre' => "'sci-fi action'"
         );
         $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, "genre:'sci-fi action'");
-        debug($result);
+        $this->assertEqual($result, array('bq'=>"genre:'sci-fi action'"));
         
         $conditions = array(
             'genre' => array("'sci-fi'")
         );
         $result = $this->CloudSearch->_conditions($conditions);
-        $this->assertEqual($result, array('bq'=>"'sci-fi'"));
+        $this->assertEqual($result, array('bq'=>"genre:'sci-fi'"));
         
         // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/searching.uint.html
         // searching uint fields conditions
@@ -688,7 +676,7 @@ class CloudSearchTestCase extends CakeTestCase {
         $result = $this->CloudSearch->_conditions($conditions);
         $this->assertEqual(
             $result,
-            array('bq'=>'(and title:star genre:drama)')
+            array('bq'=>"(and title:'star' genre:'drama')")
         );
         
         // search?bq=(or title:'star' (not title:'wars'))
@@ -708,7 +696,7 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'or' => array('title'=>'star', 'title'=>'-wars')
         );
-        $result = $this->CloudSearch->_conditions($conditions);
+        // $result = $this->CloudSearch->_conditions($conditions);
         // debug($result);
         
         $conditions = array(
@@ -727,8 +715,8 @@ class CloudSearchTestCase extends CakeTestCase {
         $conditions = array(
             'or' => array('title'=>'star', '(not title:\'wars\')')
         );
-        $result = $this->CloudSearch->_conditions($conditions);
-        debug($result);
+        // $result = $this->CloudSearch->_conditions($conditions);
+        // debug($result);
         
     }
     
@@ -738,19 +726,19 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/gettingxmlresults.html
      * @return void
      */
-    public function testGettingResultsAsXML() {
-        
-        // search?q=star+wars&results-type=xml
-        $query = array(
-            'conditions' => array(
-                'title' => '-star+war|world'
-            ),
-            'results-type' => 'xml'
-        );
-        $results = $this->CloudSearch->_query($query);
-        $this->assertEqual($results, $query);
-        
-    }
+    // public function testGettingResultsAsXML() {
+    //     
+    //     // search?q=star+wars&results-type=xml
+    //     $query = array(
+    //         'conditions' => array(
+    //             'title' => '-star+war|world'
+    //         ),
+    //         'results-type' => 'xml'
+    //     );
+    //     $results = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($results, $query);
+    //     
+    // }
     
     /**
      * Test paginating results
@@ -758,31 +746,31 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/pagination.html
      * @return void
      */
-    public function testPaginatingResults() {
-        
-        // search?q=-star&start=10
-        $query = array(
-            'conditions' => array('-star'),
-            'start' => 10
-        );
-        $this->assertEqual($this->CloudSearch->_query($query), $query);
-        
-        // search?q=-star&size=25
-        $query = array(
-            'conditions' => array('-star'),
-            'size' => 25
-        );
-        $this->assertEqual($this->CloudSearch->_query($query), $query);
-        
-        // search?q=-star&size=25&start=50
-        $query = array(
-            'conditions' => array('-star'),
-            'size' => 25,
-            'start' => 50
-        );
-        $this->assertEqual($this->CloudSearch->_query($query), $query);
-        
-    }
+    // public function testPaginatingResults() {
+    //     
+    //     // search?q=-star&start=10
+    //     $query = array(
+    //         'conditions' => array('-star'),
+    //         'start' => 10
+    //     );
+    //     $this->assertEqual($this->CloudSearch->_query($query), $query);
+    //     
+    //     // search?q=-star&size=25
+    //     $query = array(
+    //         'conditions' => array('-star'),
+    //         'size' => 25
+    //     );
+    //     $this->assertEqual($this->CloudSearch->_query($query), $query);
+    //     
+    //     // search?q=-star&size=25&start=50
+    //     $query = array(
+    //         'conditions' => array('-star'),
+    //         'size' => 25,
+    //         'start' => 50
+    //     );
+    //     $this->assertEqual($this->CloudSearch->_query($query), $query);
+    //     
+    // }
     
     /**
      * Test retrieving data from index fields
@@ -790,21 +778,21 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/retrievingdata.html
      * @return void
      */
-    public function testRetrievingDataFromIndexFields() {
-        
-        // search?q=star+wars&return-fields=actor,title,text_relevance
-        $query = array(
-            'conditions' => array('star', '+wars'),
-            'return-fields' => array('actor', 'title', 'text_relevance')
-        );
-        $expected = array(
-            'conditions' => array('star', '+wars'),
-            'return-fields' => 'actor,title,text_relevance'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-    }
+    // public function testRetrievingDataFromIndexFields() {
+    //     
+    //     // search?q=star+wars&return-fields=actor,title,text_relevance
+    //     $query = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'return-fields' => array('actor', 'title', 'text_relevance')
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'return-fields' => 'actor,title,text_relevance'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    // }
     
     /**
      * Test sorting results
@@ -812,49 +800,49 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/sortingresults.html
      * @return void
      */
-    public function testSortResults() {
-        
-        // search?q=star+wars&return-fields=title&rank=title
-        $query = array(
-            'conditions' => array('star', '+wars'),
-            'return-fields' => array('title'),
-            'rank' => 'title'
-        );
-        $expected = array(
-            'conditions' => array('star', '+wars'),
-            'return-fields' => 'title',
-            'rank' => 'title'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?q=star+wars&rank=-title
-        $query = array(
-            'conditions' => array('star', '+wars'),
-            'rank' => '-title'
-        );
-        $expected = array(
-            'conditions' => array('star', '+wars'),
-            'rank' => '-title'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?q=star+wars&return-fields=title,year&rank=-year
-        $query = array(
-            'conditions' => array('star', '+wars'),
-            'return-fields' => array('title', 'year'),
-            'rank' => '-year'
-        );
-        $expected = array(
-            'conditions' => array('star', '+wars'),
-            'return-fields' => 'title,year',
-            'rank' => '-year'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-    }
+    // public function testSortResults() {
+    //     
+    //     // search?q=star+wars&return-fields=title&rank=title
+    //     $query = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'return-fields' => array('title'),
+    //         'rank' => 'title'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'return-fields' => 'title',
+    //         'rank' => 'title'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?q=star+wars&rank=-title
+    //     $query = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'rank' => '-title'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'rank' => '-title'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?q=star+wars&return-fields=title,year&rank=-year
+    //     $query = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'return-fields' => array('title', 'year'),
+    //         'rank' => '-year'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star', '+wars'),
+    //         'return-fields' => 'title,year',
+    //         'rank' => '-year'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    // }
     
     /**
      * Test getting facet information for text and literal fields
@@ -862,23 +850,23 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.text.html
      * @return void
      */
-    public function testGettingFacetInformationForTextAndLiteralFields() {
-        
-        // search?bq=title:'star'&facet=genre&facet-genre-top-n=5
-        $query = array(
-            'conditions' => array('title'=>'star'),
-            'facet' => 'genre',
-            'facet-genre-top-n' => 5
-        );
-        $expected = array(
-            'conditions' => array('title'=>'star'),
-            'facet' => 'genre',
-            'facet-genre-top-n' => 5
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-    }
+    // public function testGettingFacetInformationForTextAndLiteralFields() {
+    //     
+    //     // search?bq=title:'star'&facet=genre&facet-genre-top-n=5
+    //     $query = array(
+    //         'conditions' => array('title'=>'star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-top-n' => 5
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('title'=>'star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-top-n' => 5
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    // }
     
     /**
      * Test getting facet information for uint fields
@@ -898,37 +886,37 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.constraints.html
      * @return void
      */
-    public function testGettingFacetInformationForParticularValues() {
-        
-        // search?q=star&facet=genre&facet-genre-constraints='Drama','Sci-Fi'
-        $query = array(
-            'conditions' => array('star'),
-            'facet' => 'genre',
-            'facet-genre-constraints' => array('Drama', 'Sci-Fi')
-        );
-        $expected = array(
-            'conditions' => array('star'),
-            'facet' => 'genre',
-            'facet-genre-constraints' => "'Drama','Sci-Fi'"
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?q=star&facet=year&facet-year-constraints=2000,2001,2002..2004,2005..
-        $query = array(
-            'conditions' => array('star'),
-            'facet' => 'year',
-            'facet-year-constraints' => array(2000,2001,'2002..2004','2005')
-        );
-        $expected = array(
-            'conditions' => array('star'),
-            'facet' => 'year',
-            'facet-year-constraints' => "'2000','2001','2002..2004','2005'"
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-    }
+    // public function testGettingFacetInformationForParticularValues() {
+    //     
+    //     // search?q=star&facet=genre&facet-genre-constraints='Drama','Sci-Fi'
+    //     $query = array(
+    //         'conditions' => array('star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-constraints' => array('Drama', 'Sci-Fi')
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-constraints' => "'Drama','Sci-Fi'"
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?q=star&facet=year&facet-year-constraints=2000,2001,2002..2004,2005..
+    //     $query = array(
+    //         'conditions' => array('star'),
+    //         'facet' => 'year',
+    //         'facet-year-constraints' => array(2000,2001,'2002..2004','2005')
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star'),
+    //         'facet' => 'year',
+    //         'facet-year-constraints' => "'2000','2001','2002..2004','2005'"
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    // }
     
     /**
      * Test sorting facet information
@@ -936,139 +924,139 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/faceting.sorting.html
      * @return void
      */
-    public function testSortingFacetInformation() {
-        
-        // search?bq=title:'star'&facet=genre&facet-genre-sort=alpha
-        $query = array(
-            'conditions' => array('title'=>'star'),
-            'facet' => 'genre',
-            'facet-genre-sort' => 'alpha'
-        );
-        $expected = array(
-            'conditions' => array('title'=>'star'),
-            'facet' => 'genre',
-            'facet-genre-sort' => 'alpha'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?bq=title:'star'&facet=genre&facet-genre-sort=-max(text_relevance)
-        $query = array(
-            'conditions' => array('title'=>'star'),
-            'facet' => 'genre',
-            'facet-genre-sort' => '-max(text_relevance)'
-        );
-        $expected = array(
-            'conditions' => array('title'=>'star'),
-            'facet' => 'genre',
-            'facet-genre-sort' => '-max(text_relevance)'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?bq='state'&facet=chief&facet-chief-sort=sum(majvotes)
-        $query = array(
-            'conditions' => array('state'),
-            'facet' => 'chief',
-            'facet-chief-sort' => 'sum(majvotes)'
-        );
-        $expected = array(
-            'conditions' => array('state'),
-            'facet' => 'chief',
-            'facet-chief-sort' => 'sum(majvotes)'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-    }
+    // public function testSortingFacetInformation() {
+    //     
+    //     // search?bq=title:'star'&facet=genre&facet-genre-sort=alpha
+    //     $query = array(
+    //         'conditions' => array('title'=>'star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-sort' => 'alpha'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('title'=>'star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-sort' => 'alpha'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?bq=title:'star'&facet=genre&facet-genre-sort=-max(text_relevance)
+    //     $query = array(
+    //         'conditions' => array('title'=>'star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-sort' => '-max(text_relevance)'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('title'=>'star'),
+    //         'facet' => 'genre',
+    //         'facet-genre-sort' => '-max(text_relevance)'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?bq='state'&facet=chief&facet-chief-sort=sum(majvotes)
+    //     $query = array(
+    //         'conditions' => array('state'),
+    //         'facet' => 'chief',
+    //         'facet-chief-sort' => 'sum(majvotes)'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('state'),
+    //         'facet' => 'chief',
+    //         'facet-chief-sort' => 'sum(majvotes)'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    // }
     
     /**
      * Test other face queries
      *
      * @return void
      */
-    public function testOtherFacetQueries() {
-        
-        // search?q=star&facet=actor,genre&facet-actor-top-n=10
-        // &facet-genre-top-n=5&size=5&results-type=xml
-        $query = array(
-            'conditions' => array('star'),
-            'facet' => array('actor', 'genre'),
-            'facet-actor-top-n' => 10,
-            'facet-genre-top-n' => 5,
-            'size' => 5,
-            'results-type' => 'xml'
-        );
-        $expected = array(
-            'conditions' => array('star'),
-            'facet' => 'actor,genre',
-            'facet-actor-top-n' => 10,
-            'facet-genre-top-n' => 5,
-            'size' => 5,
-            'results-type' => 'xml'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?bq=(and 'star' actor:'William Shatner')&facet=actor,genre
-        // &facet-actor-top-n=10&facet-genre-top-n=5&size=5
-        // &results-type=xml
-        $query = array(
-            'conditions' => array('and'=>array('actor'=>'William Shatner')),
-            'facet' => array('actor', 'genre'),
-            'facet-actor-top-n' => 10,
-            'facet-genre-top-n' => 5,
-            'size' => 5,
-            'results-type' => 'xml'
-        );
-        $expected = array(
-            'conditions' => array('and'=>array('actor'=>'William Shatner')),
-            'facet' => 'actor,genre',
-            'facet-actor-top-n' => 10,
-            'facet-genre-top-n' => 5,
-            'size' => 5,
-            'results-type' => 'xml'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-        // search?bq=(and 'star' actor:'William Shatner' actor:'Adamson, Joseph')
-        // &return-fields=title&facet=actor,genre&facet-actor-top-n=10
-        // &facet-genre-top-n=5&size=5&results-type=xml
-        $query = array(
-            'conditions' => array(
-                'and' => array(
-                    'star',
-                    'actor' => 'William Shatner',
-                    'actor' => 'Adamson, Joseph'
-                )
-            ),
-            'return-fields' => 'title',
-            'facet' => array('actor', 'genre'),
-            'facet-actor-top-n' => 10,
-            'facet-genre-top-n' => 5,
-            'size' => 5,
-            'results-type' => 'xml'
-        );
-        $expected = array(
-            'conditions' => array(
-                'and' => array(
-                    'star',
-                    'actor' => 'William Shatner',
-                    'actor' => 'Adamson, Joseph'
-                )
-            ),
-            'return-fields' => 'title',
-            'facet' => 'actor,genre',
-            'facet-actor-top-n' => 10,
-            'facet-genre-top-n' => 5,
-            'size' => 5,
-            'results-type' => 'xml'
-        );
-        $result = $this->CloudSearch->_query($query);
-        $this->assertEqual($result, $expected);
-        
-    }
+    // public function testOtherFacetQueries() {
+    //     
+    //     // search?q=star&facet=actor,genre&facet-actor-top-n=10
+    //     // &facet-genre-top-n=5&size=5&results-type=xml
+    //     $query = array(
+    //         'conditions' => array('star'),
+    //         'facet' => array('actor', 'genre'),
+    //         'facet-actor-top-n' => 10,
+    //         'facet-genre-top-n' => 5,
+    //         'size' => 5,
+    //         'results-type' => 'xml'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('star'),
+    //         'facet' => 'actor,genre',
+    //         'facet-actor-top-n' => 10,
+    //         'facet-genre-top-n' => 5,
+    //         'size' => 5,
+    //         'results-type' => 'xml'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?bq=(and 'star' actor:'William Shatner')&facet=actor,genre
+    //     // &facet-actor-top-n=10&facet-genre-top-n=5&size=5
+    //     // &results-type=xml
+    //     $query = array(
+    //         'conditions' => array('and'=>array('actor'=>'William Shatner')),
+    //         'facet' => array('actor', 'genre'),
+    //         'facet-actor-top-n' => 10,
+    //         'facet-genre-top-n' => 5,
+    //         'size' => 5,
+    //         'results-type' => 'xml'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array('and'=>array('actor'=>'William Shatner')),
+    //         'facet' => 'actor,genre',
+    //         'facet-actor-top-n' => 10,
+    //         'facet-genre-top-n' => 5,
+    //         'size' => 5,
+    //         'results-type' => 'xml'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    //     // search?bq=(and 'star' actor:'William Shatner' actor:'Adamson, Joseph')
+    //     // &return-fields=title&facet=actor,genre&facet-actor-top-n=10
+    //     // &facet-genre-top-n=5&size=5&results-type=xml
+    //     $query = array(
+    //         'conditions' => array(
+    //             'and' => array(
+    //                 'star',
+    //                 'actor' => 'William Shatner',
+    //                 'actor' => 'Adamson, Joseph'
+    //             )
+    //         ),
+    //         'return-fields' => 'title',
+    //         'facet' => array('actor', 'genre'),
+    //         'facet-actor-top-n' => 10,
+    //         'facet-genre-top-n' => 5,
+    //         'size' => 5,
+    //         'results-type' => 'xml'
+    //     );
+    //     $expected = array(
+    //         'conditions' => array(
+    //             'and' => array(
+    //                 'star',
+    //                 'actor' => 'William Shatner',
+    //                 'actor' => 'Adamson, Joseph'
+    //             )
+    //         ),
+    //         'return-fields' => 'title',
+    //         'facet' => 'actor,genre',
+    //         'facet-actor-top-n' => 10,
+    //         'facet-genre-top-n' => 5,
+    //         'size' => 5,
+    //         'results-type' => 'xml'
+    //     );
+    //     $result = $this->CloudSearch->_query($query);
+    //     $this->assertEqual($result, $expected);
+    //     
+    // }
     
     /**
      * Test ranking customisation
@@ -1076,10 +1064,269 @@ class CloudSearchTestCase extends CakeTestCase {
      * @link http://docs.aws.amazon.com/cloudsearch/latest/developerguide/tuneranking.html
      * @return void
      */
-     public function testRankingCustomisation() {
-         
-         
-         
-     }
-     
+    public function testRankingCustomisation() {
+        
+        
+        
+    }
+    
+    
+    public function testSingleConditionArray() {
+        
+        $arr = array('one', 'two');
+        $this->assertFalse($this->CloudSearch->_isSingleConditionArray($arr));
+        
+        $arr = array('q'=>'one');
+        $this->assertFalse($this->CloudSearch->_isSingleConditionArray($arr));
+        
+        $arr = array('bq'=>'one');
+        $this->assertFalse($this->CloudSearch->_isSingleConditionArray($arr));
+        
+        $arr = array('title'=>'one');
+        $this->assertFalse($this->CloudSearch->_isSingleConditionArray($arr));
+        
+        $arr = array('star');
+        $this->assertTrue($this->CloudSearch->_isSingleConditionArray($arr));
+        
+    }
+    
+    public function testIsAnOperatorFieldOrValue() {
+        
+        $field = 'bq';
+        $value = 'is_not_an_array';
+        $this->assertFalse($this->CloudSearch->_isAnOperatorValue($field, $value));
+        
+        $field = 'is_not_bq_q_and_or_not';
+        $value = array('one');
+        $this->assertFalse($this->CloudSearch->_isAnOperatorValue($field, $value));
+        
+        $field = 'bq';
+        $value = array('title'=>'star');
+        $this->assertFalse($this->CloudSearch->_isAnOperatorValue($field, $value));
+        
+    }
+    
+    public function testIsSingleConditionQueryOrBooleanQuery() {
+        
+        $field = 'not_q_or_bq';
+        $this->assertFalse($this->CloudSearch->_isSingleConditionQueryOrBooleanQuery($field));
+        
+        $field = 'q';
+        $value = array('this is an array');
+        $this->assertFalse($this->CloudSearch->_isSingleConditionQueryOrBooleanQuery($field, $value));
+        
+        $field = 'q';
+        $value = 'star wars';
+        $this->assertTrue($this->CloudSearch->_isSingleConditionQueryOrBooleanQuery($field, $value));
+        
+    }
+    
+    public function testIsAnUintSearchRangeOfValues() {
+        
+        $value = 'one';
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchRangeOfValues($value));
+        
+        $value = array('one');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchRangeOfValues($value));
+        
+        $value = array('one', 2013);
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchRangeOfValues($value));
+        
+        $value = array(2013, 'one');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchRangeOfValues($value));
+        
+        $value = array(2001, 2013);
+        $this->assertTrue($this->CloudSearch->_isAnUintSearchRangeOfValues($value));
+        
+    }
+    
+    public function testIsAnUintSearchOpenEndedValueAtStart() {
+        
+        $value = 'one';
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtStart($value));
+        
+        $value = array('one');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtStart($value));
+        
+        $value = array('one', 'two');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtStart($value));
+        
+        $value = array('one', 2013);
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtStart($value));
+        
+        $value = array('..', 'one');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtStart($value));
+        
+        $value = array('..', 2013);
+        $this->assertTrue($this->CloudSearch->_isAnUintSearchOpenEndedValueAtStart($value));
+        
+    }
+    
+    public function testIsAnUintSearchOpenEndedValueAtEnd() {
+        
+        $value = 'one';
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtEnd($value));
+        
+        $value = array('one');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtEnd($value));
+        
+        $value = array('one', 'two');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtEnd($value));
+        
+        $value = array(2013, 'two');
+        $this->assertFalse($this->CloudSearch->_isAnUintSearchOpenEndedValueAtEnd($value));
+        
+        $value = array(2013, '..');
+        $this->assertTrue($this->CloudSearch->_isAnUintSearchOpenEndedValueAtEnd($value));
+        
+    }
+    
+    public function testEncloseSingleQuote() {
+        
+        $string = 'one';
+        $this->assertEqual('one', $this->CloudSearch->_encloseQuotes($string));
+        
+        $string = 'one two';
+        $this->assertEqual("'one two'", $this->CloudSearch->_encloseQuotes($string));
+        
+        $string = '"one"';
+        $this->assertEqual($string, $this->CloudSearch->_encloseQuotes($string));
+        
+        $string = "'one'";
+        $this->assertEqual($string, $this->CloudSearch->_encloseQuotes($string));
+        
+        $string = '"one", "two"';
+        $this->assertEqual("'{$string}'", $this->CloudSearch->_encloseQuotes($string));
+        
+        $string = "'one', 'two'";
+        $this->assertEqual($string, $this->CloudSearch->_encloseQuotes($string));
+        
+        $string = '"evans, chris"|"Garity, Troy"';
+        $result = $this->CloudSearch->_encloseQuotes($string);
+        $this->assertEqual("'{$string}'", $this->CloudSearch->_encloseQuotes($string));
+        
+        $strings = array(
+            'one',
+            'one two',
+            '"one"',
+            "'one'",
+            '"one", "two"',
+            "'one', 'two'",
+            '"evans, chris"|"Garity, Troy"'
+        );
+        $expected = array(
+            'one',
+            "'one two'",
+            '"one"',
+            "'one'",
+            "'\"one\", \"two\"'",
+            "'one', 'two'",
+            "'\"evans, chris\"|\"Garity, Troy\"'"
+        );
+        $result = $this->CloudSearch->_encloseQuotes($strings);
+        $this->assertEqual($result, $expected);
+        
+    }
+    
+    public function testIsAssociativeArray() {
+        
+        $arr = 'not_an_array';
+        $this->assertFalse($this->CloudSearch->_isAssociativeArray($arr));
+        
+        $arr = array('a', 'b', 'c');
+        $this->assertFalse($this->CloudSearch->_isAssociativeArray($arr));
+        
+        $arr = array("0" => 'a', "1" => 'b', "2" => 'c');
+        $this->assertFalse($this->CloudSearch->_isAssociativeArray($arr));
+        
+        $arr = array("1" => 'a', "0" => 'b', "2" => 'c');
+        $this->assertTrue($this->CloudSearch->_isAssociativeArray($arr));
+        
+        $arr = array("a" => 'a', "b" => 'b', "c" => 'c');
+        $this->assertTrue($this->CloudSearch->_isAssociativeArray($arr));
+        
+    }
+    
+    public function testQueryArray() {
+        
+        // test facets
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => array('title', 'text_relevance')
+        );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'facet' => 'title,text_relevance'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
+        
+        // test facets constraints
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'facet-year-constraints' => array(2001,2013),
+            'facet-tags-constraints' => array('php', 'cakephp', 'amazon')
+        );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'facet-year-constraints' => '2001..2013',
+            'facet-tags-constraints' => "'php','cakephp','amazon'",
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
+        
+        // test return fields
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'return-fields' => array('title', 'text_relevance')
+        );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'return-fields' => 'title,text_relevance'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
+        
+        // test with other parameters
+        $query = array(
+            'conditions' => array('title'=>'star'),
+            'facet-year-constraints' => array(2001,2013),
+            'facet-tags-constraints' => array('php', 'cakephp', 'amazon'),
+            'start' => 25,
+            'page' => 5
+        );
+        $expected = array(
+            'conditions' => array('title'=>'star'),
+            'facet-year-constraints' => '2001..2013',
+            'facet-tags-constraints' => "'php','cakephp','amazon'",
+            'start' => 25,
+            'page' => 5
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
+        
+    }
+    
+    public function testToArray() {
+        
+        $expected = array(
+            'item1' => array(
+                'node1' => 1,
+                'node2' => 2,
+                'node3' => 3
+            ),
+            'item2' => array(
+                'node4' => 4,
+                'node5' => 5,
+                'node6' => 6
+            )
+        );
+        $data = new stdClass();
+        $data->item1 = (object)$expected['item1'];
+        $data->item2 = (object)$expected['item2'];
+        $result = $this->CloudSearch->_toArray($data);
+        $this->assertEqual($result, $expected);
+        
+    }
+    
 }

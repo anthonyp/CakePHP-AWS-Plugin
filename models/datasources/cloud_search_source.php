@@ -360,9 +360,6 @@ class CloudSearchSource extends DataSource {
             $this->config['api_version']
         );
         
-        debug($url);
-        debug(http_build_query($params));
-        
         $response = $this->Http->get(
             $url,
             $params,
@@ -412,8 +409,6 @@ class CloudSearchSource extends DataSource {
             $params = substr($params, 1, -1);
         }
         
-        debug($params);
-        
         $response = $this->Http->post(
             $url,
             $params,
@@ -455,11 +450,11 @@ class CloudSearchSource extends DataSource {
         $out = null;
         
         if (!$type && is_string($conditions)) {
-            return array('q' => $this->_encloseSingleQuote($conditions));
+            return array('q' => $this->_encloseQuotes($conditions));
         }
         
         if (!$type && $this->_isSingleConditionArray($conditions)) {
-            return array('bq' => $this->_encloseSingleQuote($conditions[0]));
+            return array('bq' => $this->_encloseQuotes($conditions[0]));
         }
         
         if (!$type) {
@@ -469,7 +464,6 @@ class CloudSearchSource extends DataSource {
         foreach($conditions as $field=>$value) {
             $field = array_pop(explode('.', $field));
             switch (true) {
-                
                 case $this->_isAnOperatorValue($value, $field):
                     $out .= '('. $field;
                     $value = $this->_conditions($value, 'recursive');
@@ -483,11 +477,11 @@ class CloudSearchSource extends DataSource {
                     
                 case $this->_isSingleConditionQueryOrBooleanQuery($field, $value):
                     $type = $field;
-                    $out .= $this->_encloseSingleQuote($value);
+                    $out .= $this->_encloseQuotes($value);
                     break;
                     
                 case (is_string($value) || is_integer($value)):
-                    $value = $this->_encloseSingleQuote($value);
+                    $value = $this->_encloseQuotes($value);
                     if ($type == 'recursive') {
                         $out .= ' ';
                     }
@@ -509,11 +503,12 @@ class CloudSearchSource extends DataSource {
                 default:
                     if (is_array($value)) {
                         $value = join('|', $value);
+                        $value = $this->_encloseQuotes($value);
                     }
-                    if ($this->_isAssociativeArray($value)) {
-                        $out .= "{$field}:". $this->_encloseSingleQuote($value);
+                    if (!is_integer($field)) {
+                        $out .= "{$field}:". $this->_encloseQuotes($value);
                     } else {
-                        $out .= $this->_encloseSingleQuote($value);
+                        $out .= $this->_encloseQuotes($value);
                     }
                     break;
             }
@@ -541,13 +536,10 @@ class CloudSearchSource extends DataSource {
         if (isset($arr['bq'])) {
             return false;
         }
-        if (!isset($arr[0])) {
+        if ($this->_isAssociativeArray($arr)) {
             return false;
         }
-        if (is_array($arr[0])) {
-            return false;
-        }
-        return array_keys($arr) === range(0, count($arr) - 1);
+        return true;
     }
     
     public function _isAnOperatorValue($value = null, $field = null) {
@@ -619,24 +611,42 @@ class CloudSearchSource extends DataSource {
         return true;
     }
     
-    public function _encloseSingleQuote($value = null) {
-        if (strstr($value, ' ')) {
-                $value = "'{$value}'";
+    public function _encloseQuotes($string = null) {
+        if (is_array($string)) {
+            foreach($string as $k=>$v) {
+                $string[$k] = $this->_encloseQuotes($v);
+            }
+            return $string;
         }
-        return $value;
+        $last = strlen($string)-1;
+        if (strpos($string, '(') === 0) {
+            return $string;
+        }
+        if (substr_count($string, '"') > 2) {
+            return "'{$string}'";
+        }
+        if (strpos($string, '"') === 0 && strrpos($string, '"') === $last) {
+            return $string;
+        }
+        if (strpos($string, "'") === 0 && strrpos($string, "'") === $last) {
+            return $string;
+        }
+        if (strstr($string, ' ')) {
+            return "'{$string}'";
+        }
+        return $string;
     }
     
     public function _isAssociativeArray($arr = array()) {
         if (!is_array($arr)) {
             return false;
         }
-        return array_keys($arr) === range(0, count($arr) - 1);
+        return array_keys($arr) !== range(0, count($arr) - 1);
     }
     
     public function _query($query = array()) {
         
         foreach($query as $key=>$value) {
-            
             if ($key == 'conditions') {
                 continue;
             }
@@ -663,11 +673,9 @@ class CloudSearchSource extends DataSource {
             if ($key == 'return-fields' && is_array($value)) {
                 $query['return-fields'] = join(',', $value);
             }
-            
         }
         
         return $query;
-        
     }
     
     /**
