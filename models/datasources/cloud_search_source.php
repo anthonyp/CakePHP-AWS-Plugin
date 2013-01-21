@@ -718,6 +718,11 @@ class CloudSearchSource extends DataSource {
                 $query['facet'] = join(',', $value);
             }
             
+            // rank
+            if ($key == 'rank' && is_array($value)) {
+                $query['rank'] = join(',', $value);
+            }
+            
             // facet-FIELD-constraints
             if (preg_match('/^facet-(.+?)-constraints/', $key)) {
                 if (is_array($value) && (sizeof($value) == 2) 

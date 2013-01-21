@@ -1097,15 +1097,50 @@ class CloudSearchTestCase extends CakeTestCase {
         // search?q=terminator&rank-expression1=sin(text_relevance)
         // &rank-expression2=cos(text_relevance)&rank=expression1,expression2
         // &return-fields=title,text_relevance,expression2
-        
+        $query = array(
+            'conditions' => 'terminator',
+            'rank-expression1' => 'sin(text_relevance)',
+            'rank-expression2' => 'cos(text_relevance)',
+            'rank' => array('expression1', 'expression2'),
+            'return-fields' => array('title', 'text_relevance', 'expression2')
+        );
+        $expected = array(
+            'conditions' => 'terminator',
+            'rank-expression1' => 'sin(text_relevance)',
+            'rank-expression2' => 'cos(text_relevance)',
+            'rank' => 'expression1,expression2',
+            'return-fields' => 'title,text_relevance,expression2'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $expected);
         
         // search?q=star+wars&return-fields=title&rank=-popularhits
+        $query = array(
+            'conditions' => 'star+wars',
+            'return-fields' => 'title',
+            'rank' => '-popularhits'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $query);
         
-        
-        // search?q=star+wars&return-fields=title&&rank=-custom_relevance&t-is_available=1
-        
+        // search?q=star+wars&return-fields=title&rank=-custom_relevance&t-is_available=1
+        $query = array(
+            'conditions' => 'star+wars',
+            'return-fields' => 'title',
+            'rank' => '-custom_relevance',
+            't-is_available' => 1
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $query);
         
         // search?q=star+wars&return-fields=title&t-text_relevance=500..
+        $query = array(
+            'conditions' => 'star+wars',
+            'return-fields' => 'title',
+            't-text_relevance' => '500..'
+        );
+        $result = $this->CloudSearch->_query($query);
+        $this->assertEqual($result, $query);
         
     }
     
