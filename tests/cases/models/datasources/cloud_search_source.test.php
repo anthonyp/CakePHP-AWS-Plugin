@@ -472,8 +472,6 @@ class CloudSearchTestCase extends CakeTestCase {
      */
     public function testSearchingTextFieldsConditions() {
         
-        return;
-        
         // search?bq='star'
         // searches the term with boolean query
         $conditions = array('bq'=>'star');
@@ -757,7 +755,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testGettingResultsAsXML() {
-        return;
+        
         // search?q=star+wars&results-type=xml
         $query = array(
             'conditions' => array(
@@ -777,7 +775,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testPaginatingResults() {
-        return;
+        
         // search?q=-star&start=10
         $query = array(
             'conditions' => array('-star'),
@@ -809,7 +807,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testRetrievingDataFromIndexFields() {
-        return;
+        
         // search?q=star+wars&return-fields=actor,title,text_relevance
         $query = array(
             'conditions' => array('star', '+wars'),
@@ -831,7 +829,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testSortResults() {
-        return;
+        
         // search?q=star+wars&return-fields=title&rank=title
         $query = array(
             'conditions' => array('star', '+wars'),
@@ -881,7 +879,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testGettingFacetInformationForTextAndLiteralFields() {
-        return;
+        
         // search?bq=title:'star'&facet=genre&facet-genre-top-n=5
         $query = array(
             'conditions' => array('title'=>'star'),
@@ -955,7 +953,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testSortingFacetInformation() {
-        return;
+        
         // search?bq=title:'star'&facet=genre&facet-genre-sort=alpha
         $query = array(
             'conditions' => array('title'=>'star'),
@@ -1006,7 +1004,7 @@ class CloudSearchTestCase extends CakeTestCase {
      * @return void
      */
     public function testOtherFacetQueries() {
-        return;
+        
         // search?q=star&facet=actor,genre&facet-actor-top-n=10
         // &facet-genre-top-n=5&size=5&results-type=xml
         $query = array(
