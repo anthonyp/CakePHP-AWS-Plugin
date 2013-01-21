@@ -1,6 +1,6 @@
 <?php
 /**
- * CloudSearchSource DataSource File
+ * CloudSearch DataSource File
  *
  * Copyright (c) 2013 Everton Yoshitani
  *
