@@ -113,8 +113,6 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
-        //debug(__FUNCTION__);
-        //debug(func_get_args());
         
         if ($fields == null) {
             unset($fields, $values);
@@ -178,8 +176,6 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
-        //debug(__FUNCTION__);
-        //debug(func_get_args());
         
         extract($query);
         
@@ -229,8 +225,6 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
-        //debug(__FUNCTION__);
-        //debug(func_get_args());
         
         if ($fields !== null && $values !== null) {
             $data = array_combine($fields, $values);
@@ -285,8 +279,6 @@ class CloudSearchSource extends DataSource {
         if (!$this->Http) {
             return false;
         }
-        //debug(__FUNCTION__);
-        //debug(func_get_args());
         
         if (sizeof($conditions) > 1) {
             trigger_error(__('Conditional delete are not supported yet...', true));
@@ -338,16 +330,12 @@ class CloudSearchSource extends DataSource {
         trigger_error(__('Invalid method call: '.$method, true));
     }
     
-    public function findBy($method = null, $params = array(), &$model = null) {
-        debug(func_get_args());
-        return true;
-    }
-    
     /**
      * Call CloudSearch Search API
      *
-     * @param string $params Array of parameters for search api call.
-     * @return void
+     * @param array $params Array of parameters for search api call.
+     * @param string $type Request content type.
+     * @return mixed Returns array with results. Or boolean false on error.
      * @since 0.1
      */
     public function search($params = array(), $type = 'application/json') {
@@ -386,8 +374,9 @@ class CloudSearchSource extends DataSource {
     /**
      * Call CloudSearch Document API
      *
-     * @param string $params Array of parameters for document api call.
-     * @return void
+     * @param array $params Array of parameters for document api call.
+     * @param string $type Request content type.
+     * @return mixed Returns array with results. Or boolean false on error.
      * @since 0.1
      */
     public function document($params = array(), $type = 'application/json') {
@@ -434,18 +423,27 @@ class CloudSearchSource extends DataSource {
     }
     
     /**
+     * Find by field
+     *
+     * @param string $field Field name.
+     * @param array $params Find conditions.
+     * @param string $model Model object.
+     * @return mixed Returns array with results. Or boolean false on error.
+     * @author Yoshitani Everton
+     */
+    public function findBy($field = null, $params = array(), &$model = null) {
+        trigger_error(__('findBy not supported', true));
+    }
+    
+    /**
      * Translate a conditions array to CloudSearch format
      *
-     * @param object $model A Model object that the query is for.
      * @param array $conditions Array with conditions.
+     * @param string $type Interation type: recursive or query type.
      * @return array Returns converted array to DynamoDB format of conditions.
      * @since 0.1
      */
-    public function _conditions($conditions = array(), $type = null, $debug = false) {
-        
-        if ($debug) {
-            debug($conditions);
-        }
+    public function _conditions($conditions = array(), $type = null) {
         
         $out = null;
         
@@ -464,15 +462,14 @@ class CloudSearchSource extends DataSource {
         foreach($conditions as $field=>$value) {
             $field = array_pop(explode('.', $field));
             switch (true) {
-                case $this->_isAnOperatorValue($value, $field):
+                case $this->_isAnOperator($field, $value):
                     $out .= '('. $field;
-                    $value = $this->_conditions($value, 'recursive');
-                    if (is_array($value)) {
-                        $out .= join(' ', $value);
-                    } else {
-                        $out .= $value;
-                    }
+                    $out .= $this->_conditions($value, 'recursive');
                     $out .= ')';
+                    break;
+                    
+                case is_array($value) && $this->_isAnOperator(key($value), $value):
+                    $out .= ' '. $this->_conditions($value, 'recursive');
                     break;
                     
                 case $this->_isSingleConditionQueryOrBooleanQuery($field, $value):
@@ -483,9 +480,14 @@ class CloudSearchSource extends DataSource {
                 case (is_string($value) || is_integer($value)):
                     $value = $this->_encloseQuotes($value);
                     if ($type == 'recursive') {
-                        $out .= ' ';
+                        if ($field == '0') {
+                            $out .= ' '. $value;
+                        } else {
+                            $out .= " {$field}:'{$value}'";
+                        }
+                    } else {
+                        $out .= "{$field}:{$value}";
                     }
-                    $out .= "{$field}:{$value}";
                     break;
                     
                 case $this->_isAnUintSearchRangeOfValues($value):
@@ -505,17 +507,9 @@ class CloudSearchSource extends DataSource {
                         $value = join('|', $value);
                         $value = $this->_encloseQuotes($value);
                     }
-                    if (!is_integer($field)) {
-                        $out .= "{$field}:". $this->_encloseQuotes($value);
-                    } else {
-                        $out .= $this->_encloseQuotes($value);
-                    }
+                    $out .= "{$field}:". $this->_encloseQuotes($value);
                     break;
             }
-        }
-        
-        if ($debug) {
-            debug($out);
         }
         
         if ($type == 'recursive') {
@@ -526,6 +520,13 @@ class CloudSearchSource extends DataSource {
         
     }
     
+    /**
+     * Check if is a single condition array
+     *
+     * @param array $arr Array to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
     public function _isSingleConditionArray($arr = array()) {
         if (sizeof($arr) != 1) {
             return false;
@@ -542,17 +543,33 @@ class CloudSearchSource extends DataSource {
         return true;
     }
     
-    public function _isAnOperatorValue($value = null, $field = null) {
+    /**
+     * Check if is a conditional or query type
+     *
+     * @param string $field Field to check.
+     * @param mixed $value String or array value to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
+    public function _isAnOperator($field = null, $value = null) {
         $operators = array('bq', 'q', 'and', 'or', 'not');
         if (!is_array($value)) {
             return false;
         }
-        if (!in_array($field, $operators)) {
+        if (!in_array($field, $operators, true)) {
             return false;
         }
         return true;
     }
     
+    /**
+     * Check if is single condition query or boolean query
+     *
+     * @param string $field Field to check.
+     * @param mixed $value String or array value to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
     public function _isSingleConditionQueryOrBooleanQuery($field = null, $value = null) {
         if ($field !== 'q' && $field !== 'bq') {
             return false;
@@ -563,6 +580,13 @@ class CloudSearchSource extends DataSource {
         return true;
     }
     
+    /**
+     * Check if is an uint search range or values
+     *
+     * @param mixed $value Value to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
     public function _isAnUintSearchRangeOfValues($value = null) {
         if (!is_array($value)) {
             return false;
@@ -579,6 +603,13 @@ class CloudSearchSource extends DataSource {
         return true;
     }
     
+    /**
+     * Check if is an uint search open ended value at start
+     *
+     * @param string $value Value to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
     public function _isAnUintSearchOpenEndedValueAtStart($value = null) {
         if (!is_array($value)) {
             return false;
@@ -595,6 +626,13 @@ class CloudSearchSource extends DataSource {
         return true;
     }
     
+    /**
+     * Check if is an uint search open ended value at end
+     *
+     * @param string $value Value to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
     public function _isAnUintSearchOpenEndedValueAtEnd($value = null) {
         if (!is_array($value)) {
             return false;
@@ -611,6 +649,13 @@ class CloudSearchSource extends DataSource {
         return true;
     }
     
+    /**
+     * Enclose string into quotes
+     *
+     * @param mixed $string String or Array of strings to enclose.
+     * @return mixed Returns string(s) enclosed by quotes.
+     * @since 0.1
+     */
     public function _encloseQuotes($string = null) {
         if (is_array($string)) {
             foreach($string as $k=>$v) {
@@ -625,6 +670,9 @@ class CloudSearchSource extends DataSource {
         if (substr_count($string, '"') > 2) {
             return "'{$string}'";
         }
+        if (strstr($string, "'") && (substr_count($string, "'") % 2) == 0) {
+            return $string;
+        }
         if (strpos($string, '"') === 0 && strrpos($string, '"') === $last) {
             return $string;
         }
@@ -637,6 +685,13 @@ class CloudSearchSource extends DataSource {
         return $string;
     }
     
+    /**
+     * Check if is an associative array
+     *
+     * @param array $arr Array to check.
+     * @return boolean Returns boolean.
+     * @since 0.1
+     */
     public function _isAssociativeArray($arr = array()) {
         if (!is_array($arr)) {
             return false;
@@ -644,6 +699,13 @@ class CloudSearchSource extends DataSource {
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
     
+    /**
+     * Parse query data parameters
+     *
+     * @param array $query Query data.
+     * @return array Query data parsed.
+     * @since 0.1
+     */
     public function _query($query = array()) {
         
         foreach($query as $key=>$value) {
