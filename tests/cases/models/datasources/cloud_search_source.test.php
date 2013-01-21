@@ -1109,7 +1109,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
-    
+    /**
+     * Test _isSingleConditionArray
+     *
+     * @return void
+     */
     public function testSingleConditionArray() {
         
         $arr = array('one', 'two');
@@ -1129,6 +1133,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _isAnOperator
+     *
+     * @return void
+     */
     public function testIsAnOperator() {
         
         $field = 'bq';
@@ -1145,6 +1154,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _isSingleConditionQueryOrBooleanQuery
+     *
+     * @return void
+     */
     public function testIsSingleConditionQueryOrBooleanQuery() {
         
         $field = 'not_q_or_bq';
@@ -1160,6 +1174,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _isAnUintSearchRangeOfValues
+     *
+     * @return void
+     */
     public function testIsAnUintSearchRangeOfValues() {
         
         $value = 'one';
@@ -1179,6 +1198,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _isAnUintSearchOpenEndedValueAtStart
+     *
+     * @return void
+     */
     public function testIsAnUintSearchOpenEndedValueAtStart() {
         
         $value = 'one';
@@ -1201,6 +1225,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _isAnUintSearchOpenEndedValueAtEnd
+     *
+     * @return void
+     */
     public function testIsAnUintSearchOpenEndedValueAtEnd() {
         
         $value = 'one';
@@ -1220,6 +1249,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _encloseQuotes
+     *
+     * @return void
+     */
     public function testEncloseQuotes() {
         
         $string = "(or title:'star' (not title:'wars'))";
@@ -1273,6 +1307,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _isAssociativeArray
+     *
+     * @return void
+     */
     public function testIsAssociativeArray() {
         
         $arr = 'not_an_array';
@@ -1292,6 +1331,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _query
+     *
+     * @return void
+     */
     public function testQueryArray() {
         
         // test facets
@@ -1352,6 +1396,11 @@ class CloudSearchTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test _toArray
+     *
+     * @return void
+     */
     public function testToArray() {
         
         $expected = array(
