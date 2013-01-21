@@ -212,7 +212,7 @@ class CloudSearchTestCase extends CakeTestCase {
         $this->assertEqual($result, $expected);
         
         $query = array('conditions'=>array());
-        $this->expectError(__('Empty query string', true));
+        $this->expectError(__('Empty conditons array given', true));
         $this->CloudSearch->read($this->Model, $query);
         
         $query = array('conditions' => array('Model.id'=>'tt1408102'));
@@ -237,6 +237,204 @@ class CloudSearchTestCase extends CakeTestCase {
         $this->CloudSearch->Http->setReturnValueAt(3, 'get', $response);
         $result = $this->CloudSearch->read($this->Model, $query);
         $expected = array(array(array('count'=>1)));
+        $this->assertEqual($result, $expected);
+        
+        // set find query type to ALL from here
+        $this->Model->findQueryType = 'all';
+        
+        $query = array('conditions' => array('title' => 'story funny|underdog'));
+        $expectedParams = array('conditions' => array('bq' => "title:'story funny|underdog'"));
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(4, 'get', $response);
+        $this->CloudSearch->Http->expectAt(4, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array(
+                'actor' => '"evans, chris"|"Garity, Troy"'
+            )
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => "actor:'\"evans, chris\"|\"Garity, Troy\"'"
+            )
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(5, 'get', $response);
+        $this->CloudSearch->Http->expectAt(5, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('"with love"')
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => '"with love"'
+            )
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(6, 'get', $response);
+        $this->CloudSearch->Http->expectAt(6, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array(
+                'or' => array('title'=>'star', array('not'=>array('title'=>'wars')))
+            )
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => "(or title:'star' (not title:'wars'))"
+            )
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(7, 'get', $response);
+        $this->CloudSearch->Http->expectAt(7, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array(
+                'title' => '-star+war|world'
+            ),
+            'results-type' => 'xml'
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => 'title:-star+war|world'
+            ),
+            'results-type' => 'xml'
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(8, 'get', $response);
+        $this->CloudSearch->Http->expectAt(8, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('-star'),
+            'size' => 25,
+            'start' => 50
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => '-star'
+            ),
+            'size' => 25,
+            'start' => 50
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(9, 'get', $response);
+        $this->CloudSearch->Http->expectAt(9, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('star'),
+            'return-fields' => array('actor', 'title', 'text_relevance')
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => 'star'
+            ),
+            'return-fields' => 'actor,title,text_relevance'
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(10, 'get', $response);
+        $this->CloudSearch->Http->expectAt(10, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('star'),
+            'return-fields' => array('title'),
+            'rank' => 'title'
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => 'star'
+            ),
+            'return-fields' => 'title',
+            'rank' => 'title'
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(11, 'get', $response);
+        $this->CloudSearch->Http->expectAt(11, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('star'),
+            'facet' => 'genre',
+            'facet-genre-top-n' => 5
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => 'star'
+            ),
+            'facet' => 'genre',
+            'facet-genre-top-n' => 5
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(12, 'get', $response);
+        $this->CloudSearch->Http->expectAt(12, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('star'),
+            'facet' => 'year',
+            'facet-year-constraints' => array(2000,2001,'2002..2004','2005')
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => 'star'
+            ),
+            'facet' => 'year',
+            'facet-year-constraints' => "'2000','2001','2002..2004','2005'"
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(13, 'get', $response);
+        $this->CloudSearch->Http->expectAt(13, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
+        $this->assertEqual($result, $expected);
+        
+        $query = array(
+            'conditions' => array('star'),
+            'facet' => array('actor', 'genre'),
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        $expectedParams = array(
+            'conditions' => array(
+                'bq' => 'star'
+            ),
+            'facet' => 'actor,genre',
+            'facet-actor-top-n' => 10,
+            'facet-genre-top-n' => 5,
+            'size' => 5,
+            'results-type' => 'xml'
+        );
+        $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
+        $this->CloudSearch->Http->setReturnValueAt(14, 'get', $response);
+        $this->CloudSearch->Http->expectAt(14, 'get', array('*', $expectedParams, '*'));
+        $result = $this->CloudSearch->read($this->Model, $query);
+        $expected = array(array('id'=>'tt1408101'));
         $this->assertEqual($result, $expected);
         
     }

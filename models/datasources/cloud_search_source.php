@@ -177,28 +177,31 @@ class CloudSearchSource extends DataSource {
             return false;
         }
         
-        extract($query);
+        $query = $this->_query($query);
         
         $key = $model->alias .'.id';
-        if (sizeof($conditions) == 1 && isset($conditions[$key])) {
-            $conditions['bq'] = "docid:'{$conditions[$key]}'";
-            unset($conditions[$key]);
+        if (sizeof($query['conditions']) == 1 && isset($query['conditions'][$key])) {
+            $query['conditions']['bq'] = "docid:'". $query['conditions'][$key] ."'";
+            unset($query['conditions'][$key]);
         }
         
-        if (empty($conditions['q']) && empty($conditions['bq'])) {
-            trigger_error(__('Empty query string', true));
+        if (empty($query['conditions'])) {
+            trigger_error(__('Empty conditons array given', true));
             return false;
+        } else {
+            $query['conditions'] = $this->_conditions($query['conditions']);
         }
         
         if ($model->findQueryType == 'first') {
-            $conditions['size'] = 1;
+            $query['size'] = 1;
         }
         
-        if (!empty($page) && $page > 1) {
-            $conditions['start'] = $page;
+        if (!empty($query['page']) && $query['page'] > 1) {
+            $query['start'] = $query['page'];
+            unset($query['page']);
         }
         
-        $results = $this->search($conditions);
+        $results = $this->search($query);
         
         if ($model->findQueryType == 'count') {
             return array('0'=>array('0'=>array('count'=>count($results))));
