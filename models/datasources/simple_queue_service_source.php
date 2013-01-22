@@ -249,9 +249,16 @@ class SimpleQueueServiceSource extends DataSource {
             return trigger_error(sprintf(__('Invalid API action: %s', true), $method));
         }
         
-        $query = array_merge(array('Action' => $method), $params);
+        $query = array_shift($params);
+        $query['Action'] = $method;
         
-        return $this->_request($query);
+        $queue = null;
+        
+        if (!empty($model->queueName)) {
+            $queue = $model->queueName;
+        }
+        
+        return $this->_request($query, $queue);
         
     }
     
@@ -260,8 +267,8 @@ class SimpleQueueServiceSource extends DataSource {
      *
      * @return mixed array of the resulting request or false if unable to contact server
      */
-    public function _request($query = array()) {
-        $request = $this->_signQuery($query);
+    public function _request($query = array(), $queue = null) {
+        $request = $this->_signQuery($query, $queue);
         $response = $this->Http->get($request);
         $this->log($query);
         $this->log($request);
@@ -272,18 +279,35 @@ class SimpleQueueServiceSource extends DataSource {
     /**
      * Sign a query using sha256
      *
-     * @link Grab from https://github.com/cakephp/datasources/
+     * Partially copied from Amazon Associates datasource
+     * https://github.com/cakephp/datasources/
+     *
      * @return string request signed string.
      */
-    private function _signQuery($query = array(), $timestamp = null) {
+    private function _signQuery($query = array(), $queue = null, $timestamp = null) {
+        
+        $actionsThatDontNeedAccountId = array(
+            'CreateQueue',
+            'ListQueues',
+            'GetQueueUrl'
+        );
         
         $method = 'GET';
         $host = $this->config['host'];
         $uri = '/';
+        if (!empty($query['Action']) && !in_array($query['Action'], $actionsThatDontNeedAccountId)) {
+            if (empty($queue)) {
+                return trigger_error(__('Invalid request queue name is required', true));
+            }
+            $uri .= $this->config['account_id'];
+            $uri .= '/'. $queue .'/';
+        }
         
         if (empty($timestamp)) {
             $timestamp = gmdate("Y-m-d\TH:i:s\Z");
         }
+        
+        $query = $this->_parseQuery($query);
         
         $params = array(
             'AWSAccessKeyId' => $this->config['login'],
@@ -293,7 +317,7 @@ class SimpleQueueServiceSource extends DataSource {
             'Version' => $this->api_version
         );
         
-        $query = array_merge($params, $query);
+        $query = array_merge($query, $params);
         ksort($query);
         
         // create the canonicalized query
@@ -314,6 +338,51 @@ class SimpleQueueServiceSource extends DataSource {
         
         // create request
         return sprintf('https://%s%s?%s&Signature=%s', $host, $uri, $canonicalized_query, $signature);
+    }
+    
+    /**
+     * Convert query data to Amazon Simple Queue Service format
+     *
+     * @param string $query Query data array.
+     * @return array Array of query data converted.
+     * @since 0.1
+     */
+    public function _parseQuery($query = array()) {
+        // BatchRequestEntries
+        if (!empty($query['BatchRequestEntries'])) {
+            $i = 0;
+            $action = $query['Action'];
+            foreach($query['BatchRequestEntries'] as $attributes) {
+                $i++;
+                if (!is_array($attributes)) {
+                    continue;
+                }
+                foreach($attributes as $attributeName=>$attributeValue) {
+                    $query["{$action}RequestEntry.{$i}.{$attributeName}"] = $attributeValue;
+                }
+            }
+            unset($query['BatchRequestEntries']);
+        }
+        // AttributeNames
+        if (!empty($query['AttributeNames'])) {
+            $i = 0;
+            foreach($query['AttributeNames'] as $attribute) {
+                $i++;
+                $query["AttributeName.{$i}"] = $attribute;
+            }
+            unset($query['AttributeNames']);
+        }
+        // Attributes
+        if (!empty($query['Attributes'])) {
+            $i = 0;
+            foreach($query['Attributes'] as $k=>$v) {
+                $i++;
+                $query["Attribute.{$i}.Name"] = $k;
+                $query["Attribute.{$i}.Value"] = $v;
+            }
+            unset($query['Attributes']);
+        }
+        return $query;
     }
     
 }

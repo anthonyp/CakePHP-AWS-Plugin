@@ -60,7 +60,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         'host' => 'sqs.test.amazonaws.com',
         'login' => 'test.access.key',
         'password' => 'test.secret.key',
-        'api_version' => '2012-11-05'
+        'account_id' => '20121105'
     );
     
     /**
@@ -78,6 +78,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         if (!$this->Model) {
             $this->Model->alias = 'Model';
             $this->Model->findQueryType = null;
+            $this->Model->queueName = 'testQueue';
         }
         
     }
@@ -105,7 +106,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
             'host' => 'sqs.test.config.amazonaws.com',
             'login' => 'test.access.key',
             'password' => 'test.secret.key',
-            'api_version' => '2012-11-05'
+            'account_id' => '20121105'
         );
         $this->SimpleQueueService->setConfig($config);
         $this->assertEqual($this->SimpleQueueService->config, $config);
@@ -192,7 +193,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
                     . '<RequestId>725275ae-0b9b-4762-b238-436d7c65a1ac</RequestId>'
                     . '</ResponseMetadata></ListQueuesResponse>';
         $this->SimpleQueueService->Http->setReturnValueAt(0, 'get', $response);
-        $result = $this->SimpleQueueService->query($method, $params, $this->Model);
+        $result = $this->SimpleQueueService->query($method, array($params), $this->Model);
         $expected = array(
             'ListQueuesResponse' => array(
                 'ListQueuesResult' => array(
