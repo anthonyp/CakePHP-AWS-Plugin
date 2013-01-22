@@ -180,6 +180,31 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
      */
     public function testQuery() {
         
+        $method = 'this_method_does_not_exist';
+        $this->expectError(sprintf(__('Invalid API action: %s', true), $method));
+        $this->SimpleQueueService->query($method, array(), $this->Model);
+        
+        $method = 'ListQueues';
+        $params = array('QueueNamePrefix'=>'t');
+        $response = '<ListQueuesResponse><ListQueuesResult>'
+                    . '<QueueUrl>http://sqs.us-east-1.amazonaws.com/123456789012/testQueue</QueueUrl>'
+                    . '</ListQueuesResult><ResponseMetadata>'
+                    . '<RequestId>725275ae-0b9b-4762-b238-436d7c65a1ac</RequestId>'
+                    . '</ResponseMetadata></ListQueuesResponse>';
+        $this->SimpleQueueService->Http->setReturnValueAt(0, 'get', $response);
+        $result = $this->SimpleQueueService->query($method, $params, $this->Model);
+        $expected = array(
+            'ListQueuesResponse' => array(
+                'ListQueuesResult' => array(
+                    'QueueUrl' => 'http://sqs.us-east-1.amazonaws.com/123456789012/testQueue'
+                ),
+                'ResponseMetadata' => array(
+                    'RequestId' => '725275ae-0b9b-4762-b238-436d7c65a1ac'
+                )
+            )
+        );
+        $this->assertEqual($result, $expected);
+        
     }
     
     /**

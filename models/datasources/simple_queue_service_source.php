@@ -46,6 +46,13 @@ class SimpleQueueServiceSource extends DataSource {
     public $description = 'Amazon Simple Queue Service DataSource';
     
     /**
+     * Amazon Simple Queue Service API version
+     *
+     * @var string
+     */
+    public $api_version = '2012-11-05';
+    
+    /**
      * Base configuration
      *
      * @var array
@@ -54,16 +61,31 @@ class SimpleQueueServiceSource extends DataSource {
         'datasource' => '',
         'host' => '',
         'login' => '',
-        'password' => '',
-        'api_version' => ''
+        'password' => ''
     );
     
     /**
-     * Query array
+     * Allowed API action accord to version 2012-11-05
      *
      * @var array
      */
-    public $query = null;
+    public $actions = array(
+        'CreateQueue',
+        'ListQueues',
+        'DeleteQueue',
+        'GetQueueAttributes',
+        'SetQueueAttributes',
+        'SendMessage',
+        'ReceiveMessage',
+        'DeleteMessage',
+        'AddPermission',
+        'RemovePermission',
+        'ChangeMessageVisibility',
+        'GetQueueUrl',
+        'SendMessageBatch',
+        'DeleteMessageBatch',
+        'ChangeMessageVisibilityBatch'
+    );
     
     /**
      * HttpSocket object
@@ -213,15 +235,24 @@ class SimpleQueueServiceSource extends DataSource {
     }
     
     /**
-     * Wraps Amazon Simple Queue API
+     * Query with Amazon Simple Queue Service API
      *
-     * @link http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/Welcome.html
-     * @param mixed All methods of Amazon DynamoDB SDK API.
-     * @return mixed Returns mixed value relative to Amazon DynamoDB SDK API.
+     * @param string $method Call API method.
+     * @param array $params Array of parameters for query.
+     * @param object $model Model object that the record is for.
+     * @return mixed Returns Amazon Simple Queue Service API response.
      * @since 0.1
      */
-    public function query() {
-        return false;
+    public function query($method = null, $params = array(), &$model = null) {
+        
+        if (!in_array($method, $this->actions)) {
+            return trigger_error(sprintf(__('Invalid API action: %s', true), $method));
+        }
+        
+        $query = array_merge(array('Action' => $method), $params);
+        
+        return $this->_request($query);
+        
     }
     
     /**
@@ -229,11 +260,13 @@ class SimpleQueueServiceSource extends DataSource {
      *
      * @return mixed array of the resulting request or false if unable to contact server
      */
-    public function _request() {
-        $request = $this->_signQuery();
+    public function _request($query = array()) {
+        $request = $this->_signQuery($query);
         $response = $this->Http->get($request);
-        //$this->log($response);
-        return Set::reverse(new Xml($retval));
+        $this->log($query);
+        $this->log($request);
+        $this->log($response);
+        return Set::reverse(new Xml($response));
     }
     
     /**
@@ -242,15 +275,30 @@ class SimpleQueueServiceSource extends DataSource {
      * @link Grab from https://github.com/cakephp/datasources/
      * @return string request signed string.
      */
-    private function _signQuery() {
+    private function _signQuery($query = array(), $timestamp = null) {
+        
         $method = 'GET';
         $host = $this->config['host'];
         $uri = '/';
         
-        ksort($this->query);
+        if (empty($timestamp)) {
+            $timestamp = gmdate("Y-m-d\TH:i:s\Z");
+        }
+        
+        $params = array(
+            'AWSAccessKeyId' => $this->config['login'],
+            'Timestamp' => $timestamp,
+            'SignatureMethod' => 'HmacSHA256',
+            'SignatureVersion' => 2,
+            'Version' => $this->api_version
+        );
+        
+        $query = array_merge($params, $query);
+        ksort($query);
+        
         // create the canonicalized query
         $canonicalized_query = array();
-        foreach ($this->query as $param=>$value) {
+        foreach ($query as $param=>$value) {
             $param = str_replace('%7E', '~', rawurlencode($param));
             $value = str_replace('%7E', '~', rawurlencode($value));
             $canonicalized_query[] = $param."=".$value;
@@ -265,7 +313,7 @@ class SimpleQueueServiceSource extends DataSource {
         $signature = str_replace('%7E', '~', rawurlencode($signature));
         
         // create request
-        return sprintf('http://%s%s?%s&Signature=%s', $host, $uri, $canonicalized_query, $signature);
+        return sprintf('https://%s%s?%s&Signature=%s', $host, $uri, $canonicalized_query, $signature);
     }
     
 }

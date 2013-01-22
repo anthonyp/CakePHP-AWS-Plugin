@@ -79,6 +79,32 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testCreateQueue() {
         
+        $policy = null;
+        
+        $options = array(
+            'DelaySeconds' => 0,
+            'MaximumMessageSize' => 65536,
+            'MessageRetentionPeriod' => 345600,
+            //'Policy' => rawurlencode($policy),
+            'ReceiveMessageWaitTimeSeconds' => 0,
+            'VisibilityTimeout' => 30
+        );
+        
+        $params = array();
+        
+        $i = 0;
+        foreach($options as $k=>$v) {
+            $i++;
+            $params["Attribute.{$i}.Name"] = $k;
+            $params["Attribute.{$i}.Value"] = $v;
+        }
+        
+        $queueName = uniqid();
+        
+        $params = array_merge($params, 'QueueName' => $queueName);
+        
+        //$result = $this->Queue->query('CreateQueue', $params);
+        
     }
     
     /**
@@ -87,6 +113,14 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testListQueues() {
+        
+        $params = array('QueueNamePrefix'=>'do_not_exists');
+        $result = $this->Queue->query('ListQueues', $params);
+        $this->assertTrue(empty($result['ListQueuesResponse']['ListQueuesResult']));
+        
+        $params = array();
+        $result = $this->Queue->query('ListQueues', $params);
+        $this->assertFalse(empty($result['ListQueuesResponse']['ListQueuesResult']['QueueUrl']));
         
     }
     
@@ -97,6 +131,10 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testDeleteQueue() {
         
+        $params = array();
+        $result = $this->Queue->query('DeleteQueue', $params);
+        //debug($result);
+        
     }
     
     /**
@@ -105,6 +143,26 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testGetQueueAttributes() {
+        
+        $validValues = array(
+            'All',
+            'ApproximateNumberOfMessages',
+            'ApproximateNumberOfMessagesNotVisible',
+            'VisibilityTimeout',
+            'CreatedTimestamp',
+            'LastModifiedTimestamp',
+            'Policy',
+            'MaximumMessageSize',
+            'MessageRetentionPeriod',
+            'QueueArn',
+            'OldestMessageAge',
+            'DelaySeconds',
+            'ApproximateNumberOfMessagesDelayed'
+        );
+        
+        $params = array('AttributeName.1'=>'All');
+        $result = $this->Queue->query('GetQueueAttributesResult', $params);
+        debug($result);
         
     }
     
@@ -115,6 +173,30 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testSetQueueAttributes() {
         
+        $options = array(
+            'DelaySeconds' => 300,
+            'MaximumMessageSize' => 65536,
+            'MessageRetentionPeriod' => 345600,
+            //'Policy' => '',
+            'ReceiveMessageWaitTimeSeconds' => 0,
+            'VisibilityTimeout' => 30
+        );
+        
+        $params = array();
+        
+        $i = 0;
+        foreach($options as $k=>$v) {
+            $i++;
+            $params["Attribute.{$i}.Name"] = $k;
+            $params["Attribute.{$i}.Value"] = $v;
+        }
+        
+        $queueName = uniqid();
+        
+        $params = array_merge($params, array('QueueName' => $queueName));
+        
+        //$result = $this->Queue->query('SetQueueAttributes', $params);
+        
     }
     
     /**
@@ -123,6 +205,15 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testSendMessage() {
+        
+        $params = array(
+            'Message Body' => 'This is a test message',
+            'DelaySeconds' => 0
+        );
+        
+        $result = $this->Queue->query('CreateQueue', $params);
+        
+        debug($result);
         
     }
     
@@ -133,6 +224,8 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testReceiveMessage() {
         
+        
+        
     }
     
     /**
@@ -141,6 +234,8 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testDeleteMessage() {
+        
+        
         
     }
     
@@ -151,6 +246,8 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testAddPermission() {
         
+        
+        
     }
     
     /**
@@ -159,6 +256,8 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testRemovePermission() {
+        
+        
         
     }
     
@@ -169,6 +268,8 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testChangeMessageVisibility() {
         
+        
+        
     }
     
     /**
@@ -177,6 +278,8 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testGetQueueUrl() {
+        
+        
         
     }
     
@@ -187,6 +290,8 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testSendMessageBatch() {
         
+        
+        
     }
     
     /**
@@ -196,6 +301,8 @@ class QueueTestCase extends CakeTestCase {
      */
     public function testDeleteMessageBatch() {
         
+        
+        
     }
     
     /**
@@ -204,6 +311,8 @@ class QueueTestCase extends CakeTestCase {
      * @return void
      */
     public function testChangeMessageVisibilityBatch() {
+        
+        
         
     }
     
