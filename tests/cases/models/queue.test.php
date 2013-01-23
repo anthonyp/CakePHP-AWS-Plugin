@@ -393,4 +393,90 @@ class QueueTestCase extends CakeTestCase {
         
     }
     
+    /**
+     * Test find
+     *
+     * @return void
+     */
+    public function testFind() {
+        
+    }
+    
+    /**
+     * Test findBy
+     *
+     * @return void
+     */
+    public function testFindBy() {
+        
+    }
+    
+    /**
+     * Test Read
+     *
+     * @return void
+     */
+    public function testRead() {
+        
+        $params = array(
+            'AttributeNames' => array('All'),
+            'MaxNumberOfMessages' => 1,
+            'VisibilityTimeout' => 300,
+            'WaitTimeSeconds' => 0
+        );
+        $result = $this->Queue->read($params, 2);
+        debug($result);
+        
+    }
+    
+    /**
+     * Test Save
+     *
+     * @return void
+     */
+    public function testSave() {
+        
+    }
+    
+    /**
+     * Test delete
+     *
+     * @return void
+     */
+    public function testDelete() {
+        
+        $result = $this->Queue->read(null, 1);
+        debug($result);
+        
+        $result = $this->Queue->delete($result['ReceiptHandle']);
+        debug($result);
+    }
+    
+    /**
+     * Test saveAll
+     *
+     * @return void
+     */
+    public function testSaveAll() {
+        
+    }
+    
+    /**
+     * Test updateAll
+     *
+     * @return void
+     */
+    public function testUpdateAll() {
+        
+    }
+    
+    /**
+     * Test deleteAll
+     *
+     * @return void
+     */
+    public function testDeleteAll() {
+        
+    }
+    
 }

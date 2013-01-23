@@ -138,7 +138,28 @@ class SimpleQueueServiceSource extends DataSource {
      * @since 0.1
      */
     public function listSources() {
-        return false;
+        
+        if (!$this->Http) {
+            return false;
+        }
+        
+        $response = $this->_request(array('Action'=>'ListQueues'));
+        
+        if (empty($response['ListQueuesResponse']['ListQueuesResult'])) {
+            return false;
+        }
+        
+        $queueUrls = Set::extract(
+            $response, '/ListQueuesResponse/ListQueuesResult/QueueUrl'
+        );
+        
+        $queues = array();
+        
+        foreach($queueUrls as $url) {
+            $queues[] = substr($url, abs(strrpos($url, '/'))+1);
+        }
+        
+        return $queues;
     }
     
     /**
@@ -151,17 +172,6 @@ class SimpleQueueServiceSource extends DataSource {
      */
     public function calculate() {
         return true;
-    }
-    
-    /**
-     * Return an array of the fields in given queue name
-     *
-     * @param object $model Model object of the database table to inspect.
-     * @return array Fields in table. Keys are name and type.
-     * @since 0.1
-     */
-    public function describe(&$model) {
-        return false;
     }
     
     /**
@@ -178,7 +188,36 @@ class SimpleQueueServiceSource extends DataSource {
      * @since 0.1
      */
     public function create(&$model, $fields = null, $values = null) {
-        return false;
+        
+        if (!$this->Http) {
+            return false;
+        }
+        
+        if ($fields == null) {
+            unset($fields, $values);
+            $fields = array_keys($model->data);
+            $values = array_values($model->data);
+        }
+        
+        if ($fields !== null && $values !== null) {
+            $params = array_combine($fields, $values);
+        } else {
+            $params = $model->data;
+        }
+        
+        if (empty($params['MessageBody'])) {
+            return trigger_error(__('MessageBody field is required', true));
+        }
+        
+        $params['Action'] = 'SendMessage';
+        
+        $response = $this->_request($params, $model->queueName);
+        
+        if (empty($response['SendMessageResponse']['SendMessageResult'])) {
+            return false;
+        }
+        
+        return $response['SendMessageResponse']['SendMessageResult'];
     }
     
     /**
@@ -196,7 +235,38 @@ class SimpleQueueServiceSource extends DataSource {
      * @since 0.1
      */
     public function read(&$model, $query = array(), $recursive = null) {
-        return false;
+        
+        if (!$this->Http) {
+            return false;
+        }
+        
+        $key = $model->alias .'.id';
+        if (sizeof($query['conditions']) == 1 && isset($query['conditions'][$key]) && is_integer($query['conditions'][$key])) {
+            $params['MaxNumberOfMessages'] = $query['conditions'][$key];
+            if (!empty($query['fields'])) {
+                $params = array_merge($query['fields'], $params);
+            }
+        } else {
+            $params = $query['conditions'];
+        }
+        
+        $params = $this->_parseQuery($params);
+        
+        $params['Action'] = 'ReceiveMessage';
+        
+        $response = $this->_request($params, $model->queueName);
+        
+        if (empty($response['ReceiveMessageResponse']['ReceiveMessageResult'])) {
+            return false;
+        }
+        
+        $results = $response['ReceiveMessageResponse']['ReceiveMessageResult']['Message'];
+        
+        if (isset($model->findQueryType) && $model->findQueryType == 'count') {
+            return array('0'=>array('0'=>array('count'=>count($results))));
+        }
+        
+        return array($results);
     }
     
     /**
@@ -204,9 +274,6 @@ class SimpleQueueServiceSource extends DataSource {
      *
      * Update record from the database.
      *
-     * @todo add support for $conditions.
-     * @todo add support for updateAll.
-     * @todo add support for update actions: ADD, PUT and DELETE. 
      * @param object $model Model object that the record is for.
      * @param array $fields An array of field names to update. If null, 
      *        $model->data will be used to generate field names.
@@ -231,7 +298,28 @@ class SimpleQueueServiceSource extends DataSource {
      * @since 0.1
      */
     public function delete(&$model, $conditions = null) {
-        return false;
+        
+        if (!$this->Http) {
+            return false;
+        }
+        
+        if (sizeof($conditions) > 1) {
+            trigger_error(__('Conditions are not supported', true));
+            return false;
+        }
+        
+        $id = $model->alias.'.id';
+        if (sizeof($conditions) === 1 && empty($conditions[$id])) {
+            trigger_error(__('ReceiptHandle is required', true));
+            return false;
+        }
+        
+        $params = array(
+            'Action' => 'DeleteMessage',
+            'ReceiptHandle' => $conditions[$id]
+        );
+        
+        return $this->_request($params, $model->queueName);
     }
     
     /**
@@ -244,6 +332,10 @@ class SimpleQueueServiceSource extends DataSource {
      * @since 0.1
      */
     public function query($method = null, $params = array(), &$model = null) {
+        
+        if (!$this->Http) {
+            return false;
+        }
         
         if (!in_array($method, $this->actions)) {
             return trigger_error(sprintf(__('Invalid API action: %s', true), $method));
@@ -348,7 +440,6 @@ class SimpleQueueServiceSource extends DataSource {
      * @since 0.1
      */
     public function _parseQuery($query = array()) {
-        // BatchRequestEntries
         if (!empty($query['BatchRequestEntries'])) {
             $i = 0;
             $action = $query['Action'];
@@ -363,7 +454,6 @@ class SimpleQueueServiceSource extends DataSource {
             }
             unset($query['BatchRequestEntries']);
         }
-        // AttributeNames
         if (!empty($query['AttributeNames'])) {
             $i = 0;
             foreach($query['AttributeNames'] as $attribute) {
@@ -372,7 +462,6 @@ class SimpleQueueServiceSource extends DataSource {
             }
             unset($query['AttributeNames']);
         }
-        // Attributes
         if (!empty($query['Attributes'])) {
             $i = 0;
             foreach($query['Attributes'] as $k=>$v) {
