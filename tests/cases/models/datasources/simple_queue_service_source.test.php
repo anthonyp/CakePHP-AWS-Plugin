@@ -364,5 +364,87 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         
     }
     
+    public function testParseQuery() {
+        
+        // BatchRequestEntries
+        $query = array(
+            'Action' => 'SendMessageBatch',
+            'BatchRequestEntries' => array(
+                array(
+                    'Id' => '50ff2d3428351',
+                    'MessageBody' => 'This is a test message',
+                    'DelaySeconds' => 0
+                ),
+                array(
+                    'Id' => '50ff2d3428368',
+                    'MessageBody' => 'This is a test message',
+                    'DelaySeconds' => 0
+                ),
+                array(
+                    'Id' => '50ff2d3428374',
+                    'MessageBody' => 'This is a test message',
+                    'DelaySeconds' => 0
+                ),
+                'ignore this'
+            )
+        );
+        $result = $this->SimpleQueueService->_parseQuery($query);
+        $expected = array(
+            'Action' => 'SendMessageBatch',
+            $query['Action'] .'RequestEntry.1.Id' => '50ff2d3428351',
+            $query['Action'] .'RequestEntry.1.MessageBody' => 'This is a test message',
+            $query['Action'] .'RequestEntry.1.DelaySeconds' => 0,
+            $query['Action'] .'RequestEntry.2.Id' => '50ff2d3428368',
+            $query['Action'] .'RequestEntry.2.MessageBody' => 'This is a test message',
+            $query['Action'] .'RequestEntry.2.DelaySeconds' => 0,
+            $query['Action'] .'RequestEntry.3.Id' => '50ff2d3428374',
+            $query['Action'] .'RequestEntry.3.MessageBody' => 'This is a test message',
+            $query['Action'] .'RequestEntry.3.DelaySeconds' => 0
+        );
+        $this->assertEqual($result, $expected);
+        
+        // AttributeNames
+        $query = array(
+            'AttributeNames' => array('All'),
+            'MaxNumberOfMessages' => 3,
+            'VisibilityTimeout' => 120,
+            'WaitTimeSeconds' => 0
+        );
+        $result = $this->SimpleQueueService->_parseQuery($query);
+        $expected = array(
+            'MaxNumberOfMessages' => 3,
+            'VisibilityTimeout' => 120,
+            'WaitTimeSeconds' => 0,
+            'AttributeName.1' => 'All'
+        );
+        $this->assertEqual($result, $expected);
+        
+        // Attributes
+        $query = array(
+            'Attributes' => array(
+                'DelaySeconds' => 300,
+                'MaximumMessageSize' => 65536,
+                'MessageRetentionPeriod' => 345600,
+                'ReceiveMessageWaitTimeSeconds' => 0,
+                'VisibilityTimeout' => 30
+            )
+        );
+        $result = $this->SimpleQueueService->_parseQuery($query);
+        $expected = array(
+            'Attribute.1.Name' => 'DelaySeconds',
+            'Attribute.1.Value' => 300,
+            'Attribute.2.Name' => 'MaximumMessageSize',
+            'Attribute.2.Value' => 65536,
+            'Attribute.3.Name' => 'MessageRetentionPeriod',
+            'Attribute.3.Value' => 345600,
+            'Attribute.4.Name' => 'ReceiveMessageWaitTimeSeconds',
+            'Attribute.4.Value' => 0,
+            'Attribute.5.Name' => 'VisibilityTimeout',
+            'Attribute.5.Value' => 30
+        );
+        $this->assertEqual($result, $expected);
+        
+    }
+    
 }
 

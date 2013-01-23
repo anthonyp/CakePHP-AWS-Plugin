@@ -378,7 +378,7 @@ class SimpleQueueServiceSource extends DataSource {
      */
     private function _signQuery($query = array(), $queue = null, $timestamp = null) {
         
-        $actionsThatDontNeedAccountId = array(
+        $actionsThatDontNeedOfAccountId = array(
             'CreateQueue',
             'ListQueues',
             'GetQueueUrl'
@@ -387,7 +387,7 @@ class SimpleQueueServiceSource extends DataSource {
         $method = 'GET';
         $host = $this->config['host'];
         $uri = '/';
-        if (!empty($query['Action']) && !in_array($query['Action'], $actionsThatDontNeedAccountId)) {
+        if (!empty($query['Action']) && !in_array($query['Action'], $actionsThatDontNeedOfAccountId)) {
             if (empty($queue)) {
                 return trigger_error(__('Invalid request queue name is required', true));
             }
@@ -413,23 +413,23 @@ class SimpleQueueServiceSource extends DataSource {
         ksort($query);
         
         // create the canonicalized query
-        $canonicalized_query = array();
+        $canonicalizedQuery = array();
         foreach ($query as $param=>$value) {
             $param = str_replace('%7E', '~', rawurlencode($param));
             $value = str_replace('%7E', '~', rawurlencode($value));
-            $canonicalized_query[] = $param."=".$value;
+            $canonicalizedQuery[] = $param."=".$value;
         }
-        $canonicalized_query = implode('&', $canonicalized_query);
-        $string_to_sign = implode("\n", array($method, $host, $uri, $canonicalized_query));
+        $canonicalizedQuery = implode('&', $canonicalizedQuery);
+        $stringToSign = implode("\n", array($method, $host, $uri, $canonicalizedQuery));
         
         // calculate HMAC with SHA256 and base64-encoding
-        $signature = base64_encode(hash_hmac("sha256", $string_to_sign, $this->config['password'], true));
+        $signature = base64_encode(hash_hmac("sha256", $stringToSign, $this->config['password'], true));
         
         // encode the signature for the request
         $signature = str_replace('%7E', '~', rawurlencode($signature));
         
         // create request
-        return sprintf('https://%s%s?%s&Signature=%s', $host, $uri, $canonicalized_query, $signature);
+        return sprintf('https://%s%s?%s&Signature=%s', $host, $uri, $canonicalizedQuery, $signature);
     }
     
     /**
