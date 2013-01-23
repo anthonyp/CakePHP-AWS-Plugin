@@ -65,7 +65,7 @@ class SimpleQueueServiceSource extends DataSource {
     );
     
     /**
-     * Allowed API action accord to version 2012-11-05
+     * Available Amazon Simple Queue Service API actions for version 2012-11-05
      *
      * @var array
      */
@@ -351,13 +351,15 @@ class SimpleQueueServiceSource extends DataSource {
         }
         
         return $this->_request($query, $queue);
-        
     }
     
     /**
      * Perform the request to Amazon Simple Queue Service
      *
+     * @var array $query Query data array.
+     * @var string $queue Queue name.
      * @return mixed array of the resulting request or false if unable to contact server
+     * @since 0.1
      */
     public function _request($query = array(), $queue = null) {
         $request = $this->_signQuery($query, $queue);
@@ -374,9 +376,12 @@ class SimpleQueueServiceSource extends DataSource {
      * Partially copied from Amazon Associates datasource
      * https://github.com/cakephp/datasources/
      *
-     * @return string request signed string.
+     * @var array $query Query data array.
+     * @var string $queue Queue name.
+     * @return string Request signed string.
+     * @since 0.1
      */
-    private function _signQuery($query = array(), $queue = null, $timestamp = null) {
+    public function _signQuery($query = array(), $queue = null) {
         
         $actionsThatDontNeedOfAccountId = array(
             'CreateQueue',
@@ -386,6 +391,7 @@ class SimpleQueueServiceSource extends DataSource {
         
         $method = 'GET';
         $host = $this->config['host'];
+        
         $uri = '/';
         if (!empty($query['Action']) && !in_array($query['Action'], $actionsThatDontNeedOfAccountId)) {
             if (empty($queue)) {
@@ -395,15 +401,11 @@ class SimpleQueueServiceSource extends DataSource {
             $uri .= '/'. $queue .'/';
         }
         
-        if (empty($timestamp)) {
-            $timestamp = gmdate("Y-m-d\TH:i:s\Z");
-        }
-        
         $query = $this->_parseQuery($query);
         
         $params = array(
             'AWSAccessKeyId' => $this->config['login'],
-            'Timestamp' => $timestamp,
+            'Timestamp' => gmdate("Y-m-d\TH:i:s\Z"),
             'SignatureMethod' => 'HmacSHA256',
             'SignatureVersion' => 2,
             'Version' => $this->api_version
@@ -412,23 +414,21 @@ class SimpleQueueServiceSource extends DataSource {
         $query = array_merge($query, $params);
         ksort($query);
         
-        // create the canonicalized query
         $canonicalizedQuery = array();
         foreach ($query as $param=>$value) {
             $param = str_replace('%7E', '~', rawurlencode($param));
             $value = str_replace('%7E', '~', rawurlencode($value));
             $canonicalizedQuery[] = $param."=".$value;
         }
+        
         $canonicalizedQuery = implode('&', $canonicalizedQuery);
+        
         $stringToSign = implode("\n", array($method, $host, $uri, $canonicalizedQuery));
         
-        // calculate HMAC with SHA256 and base64-encoding
         $signature = base64_encode(hash_hmac("sha256", $stringToSign, $this->config['password'], true));
         
-        // encode the signature for the request
         $signature = str_replace('%7E', '~', rawurlencode($signature));
         
-        // create request
         return sprintf('https://%s%s?%s&Signature=%s', $host, $uri, $canonicalizedQuery, $signature);
     }
     
