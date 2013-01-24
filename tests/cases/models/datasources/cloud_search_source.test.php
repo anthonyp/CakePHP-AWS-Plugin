@@ -499,7 +499,7 @@ class CloudSearchTestCase extends CakeTestCase {
         $this->CloudSearch->Http = new MockHttpSocket();
         
         $conditions = array('key1'=>'val1', 'key2'=>'val2');
-        $this->expectError(__('Conditional delete are not supported yet...', true));
+        $this->expectError(__('Conditions are not supported', true));
         $this->CloudSearch->delete($this->Model, $conditions);
         
         $conditions = array('key1'=>'val1');
@@ -568,13 +568,14 @@ class CloudSearchTestCase extends CakeTestCase {
         
         $url = sprintf(
             'https://%s/%s/search',
-            $this->config['search_endpoint']
+            $this->config['search_endpoint'],
+            $this->CloudSearch->api_version
         );
         $params = array('bq'=>'docid:\'tt1408101\'');
         $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
         $request = array('header' => array('Content-Type' => 'application/json'));
-        $this->CloudSearch->Http->setReturnValueAt(1, 'get', $response);
-        $this->CloudSearch->Http->expectAt(1, 'get', array($url, $params, $request));
+        $this->CloudSearch->Http->setReturnValueAt(0, 'get', $response);
+        $this->CloudSearch->Http->expectAt(0, 'get', array($url, $params, $request));
         $result = $this->CloudSearch->search($params);
         $expected = array(array('id'=>'tt1408101'));
         $this->assertEqual($expected, $result);
@@ -598,7 +599,8 @@ class CloudSearchTestCase extends CakeTestCase {
         
         $url = sprintf(
             'https://%s/%s/documents/batch',
-            $this->config['document_endpoint']
+            $this->config['document_endpoint'],
+            $this->CloudSearch->api_version
         );
         $params = array(
             'type' => 'delete',
@@ -653,8 +655,8 @@ class CloudSearchTestCase extends CakeTestCase {
     
     public function testFindBy() {
         
-        $this->expectError(__('FindBy not supported', true));
-        $this->CloudSearch->findBy(null, array(), $this->Model);
+        $this->expectError(__('findBy not supported', true));
+        $this->CloudSearch->findBy();
         
     }
     

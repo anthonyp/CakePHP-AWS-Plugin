@@ -31,7 +31,7 @@ class CloudSearchSource extends DataSource {
      *
      * @var string
      */
-    public $description = 'CloudSearch DataSource';
+    public $description = 'Amazon CloudSearch DataSource';
     
     /**
      * Amazon CloudSearch API version
@@ -158,6 +158,7 @@ class CloudSearchSource extends DataSource {
             'lang' => 'en',
             'fields' => $data
         );
+        
         $results = $this->document($params);
         
         if ($results['status'] == 'success') {
@@ -294,11 +295,11 @@ class CloudSearchSource extends DataSource {
         }
         
         if (sizeof($conditions) > 1) {
-            trigger_error(__('Conditional delete are not supported yet...', true));
+            trigger_error(__('Conditions are not supported', true));
             return false;
         }
         
-        if (sizeof($conditions) === 1 && empty($conditions[$model->alias.'.id'])) {
+        if (empty($conditions[$model->alias.'.id'])) {
             trigger_error(__('Document ID is required for delete', true));
             return false;
         }
@@ -313,9 +314,9 @@ class CloudSearchSource extends DataSource {
             'version' => $version
         );
         
-        $results = $this->document($params);
+        $response = $this->document($params);
         
-        if (!empty($results['status']) && $results['status'] == 'success') {
+        if (!empty($response['status']) && $response['status'] == 'success') {
             return true;
         } else {
             return false;
@@ -352,7 +353,7 @@ class CloudSearchSource extends DataSource {
      */
     public function search($params = array(), $type = 'application/json') {
         if (sizeof($params) == 0) {
-            trigger_error(__('Invalid search parameters', true));
+            return trigger_error(__('Invalid search parameters', true));
         }
         $url = sprintf(
             'https://%s/%s/search',
@@ -443,7 +444,7 @@ class CloudSearchSource extends DataSource {
      * @author Yoshitani Everton
      */
     public function findBy($field = null, $params = array(), &$model = null) {
-        trigger_error(__('findBy not supported', true));
+        return trigger_error(__('findBy not supported', true));
     }
     
     /**
