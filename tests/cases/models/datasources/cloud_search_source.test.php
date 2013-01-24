@@ -1,6 +1,6 @@
 <?php
 /**
- * CloudSearch DataSource Test File
+ * Amazon CloudSearch DataSource Test File
  *
  * Copyright (c) 2013 Everton Yoshitani
  *
@@ -52,8 +52,7 @@ class CloudSearchTestCase extends CakeTestCase {
     public $config = array(
         'datasource' => 'AWS.CloudSearchSource',
         'search_endpoint' => 'test.search_endpoint',
-        'document_endpoint' => 'test.document_endpoint',
-        'api_version' => '1'
+        'document_endpoint' => 'test.document_endpoint'
     );
     
     /**
@@ -97,7 +96,6 @@ class CloudSearchTestCase extends CakeTestCase {
             'datasource' => 'AWS.CloudSearchSource',
             'search_endpoint' => 'search-tests-px2qjztrvfmtcvmik3ohbdq6vy.us-east-1.cloudsearch.amazonaws.com',
             'document_endpoint' => 'doc-tests-px2qjztrvfmtcvmik3ohbdq6vy.us-east-1.cloudsearch.amazonaws.com',
-            'api_version' => '2011-02-01'
         );
         $this->CloudSearch->setConfig($config);
         $this->assertEqual($this->CloudSearch->config, $config);
@@ -570,8 +568,7 @@ class CloudSearchTestCase extends CakeTestCase {
         
         $url = sprintf(
             'https://%s/%s/search',
-            $this->config['search_endpoint'],
-            $this->config['api_version']
+            $this->config['search_endpoint']
         );
         $params = array('bq'=>'docid:\'tt1408101\'');
         $response = '{"rank":"-text_relevance","match-expr":"(label docid:\'tt1408101\')","hits":{"found":1,"start":0,"hit":[{"id":"tt1408101"}]},"info":{"rid":"1d64c0a48f50ba1f61a1d466d92171192721d909a0d01e7f9fbdb5e77957166a99690fb2e25626dc","time-ms":3,"cpu-time-ms":0}}';
@@ -601,8 +598,7 @@ class CloudSearchTestCase extends CakeTestCase {
         
         $url = sprintf(
             'https://%s/%s/documents/batch',
-            $this->config['document_endpoint'],
-            $this->config['api_version']
+            $this->config['document_endpoint']
         );
         $params = array(
             'type' => 'delete',
@@ -657,7 +653,7 @@ class CloudSearchTestCase extends CakeTestCase {
     
     public function testFindBy() {
         
-        $this->expectError(__('findBy not supported', true));
+        $this->expectError(__('FindBy not supported', true));
         $this->CloudSearch->findBy(null, array(), $this->Model);
         
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * CloudSearch DataSource File
+ * Amazon CloudSearch DataSource File
  *
  * Copyright (c) 2013 Everton Yoshitani
  *
@@ -16,6 +16,11 @@
  * @copyright   2013 Everton Yoshitani <everton@notreve.com>
  * @license     http://www.opensource.org/licenses/mit-license.php The MIT License
  * @link        http://github.com/anthonyp/CakePHP-AWS-Plugin
+*/
+
+/**
+ * Import HttpSocket, required library
+ *
  */
 App::import('Core', 'HttpSocket');
 
@@ -27,6 +32,13 @@ class CloudSearchSource extends DataSource {
      * @var string
      */
     public $description = 'CloudSearch DataSource';
+    
+    /**
+     * Amazon CloudSearch API version
+     *
+     * @var string
+     */
+    public $api_version = '2011-02-01';
     
     /**
      * Http object
@@ -43,8 +55,7 @@ class CloudSearchSource extends DataSource {
     public $config = array(
         'datasource' => '',
         'search_endpoint' => '',
-        'document_endpoint' => '',
-        'api_version' => ''
+        'document_endpoint' => ''
     );
     
     /**
@@ -154,7 +165,6 @@ class CloudSearchSource extends DataSource {
         } else {
             return false;
         }
-        
     }
     
     /**
@@ -310,7 +320,6 @@ class CloudSearchSource extends DataSource {
         } else {
             return false;
         }
-        
     }
     
     /**
@@ -348,7 +357,7 @@ class CloudSearchSource extends DataSource {
         $url = sprintf(
             'https://%s/%s/search',
             $this->config['search_endpoint'],
-            $this->config['api_version']
+            $this->api_version
         );
         
         $response = $this->Http->get(
@@ -389,7 +398,7 @@ class CloudSearchSource extends DataSource {
         $url = sprintf(
             'https://%s/%s/documents/batch',
             $this->config['document_endpoint'],
-            $this->config['api_version']
+            $this->api_version
         );
         
         $params = json_encode($params);
@@ -422,7 +431,6 @@ class CloudSearchSource extends DataSource {
         // handle errors here
         
         return $this->_toArray($response);
-        
     }
     
     /**
@@ -520,7 +528,6 @@ class CloudSearchSource extends DataSource {
         } else {
             return array($type=>$out);
         }
-        
     }
     
     /**

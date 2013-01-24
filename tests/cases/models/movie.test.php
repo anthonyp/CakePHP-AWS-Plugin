@@ -74,7 +74,6 @@ class MovieTestCase extends CakeTestCase {
         'datasource' => 'AWS.CloudSearchSource',
         'search_endpoint' => 'search-tests-px2qjztrvfmtcvmik3ohbdq6vy.us-east-1.cloudsearch.amazonaws.com',
         'document_endpoint' => 'doc-tests-px2qjztrvfmtcvmik3ohbdq6vy.us-east-1.cloudsearch.amazonaws.com',
-        'api_version' => '2011-02-01'
     );
     
     public function startTest() {
@@ -676,8 +675,6 @@ class MovieTestCase extends CakeTestCase {
         );
         $this->assertEqual($result, $expected);
         
-        // @todo test error
-        
     }
     
     public function testUpdate() {
@@ -696,8 +693,6 @@ class MovieTestCase extends CakeTestCase {
         );
         
         $this->assertTrue($this->Movie->save($data));
-        
-        // @todo test error
         
     }
     
