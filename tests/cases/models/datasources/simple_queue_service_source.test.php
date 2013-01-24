@@ -194,8 +194,14 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
                     . '</SendMessageResponse>';
         $this->SimpleQueueService->Http->setReturnValueAt(0, 'get', $response);
         $results = $this->SimpleQueueService->create($this->Model, $fields, $values);
-        $this->assertEqual($results['MessageId'], 'abb862ce-46cf-444f-a88d-46afc622b3de');
-        $this->assertEqual($results['MD5OfMessageBody'], 'fafb00f5732ab283681e124bf8747ed1');
+        $this->assertEqual(
+            $results['SendMessageResponse']['SendMessageResult']['MessageId'],
+            'abb862ce-46cf-444f-a88d-46afc622b3de'
+        );
+        $this->assertEqual(
+            $results['SendMessageResponse']['SendMessageResult']['MD5OfMessageBody'],
+            'fafb00f5732ab283681e124bf8747ed1'
+        );
         
         $this->Model->data = array(
             'MessageBody' => 'This is a test message',
@@ -213,8 +219,14 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
                     . '</SendMessageResponse>';
         $this->SimpleQueueService->Http->setReturnValueAt(1, 'get', $response);
         $results = $this->SimpleQueueService->create($this->Model);
-        $this->assertEqual($results['MessageId'], 'abb862ce-46cf-444f-a88d-46afc622b3de');
-        $this->assertEqual($results['MD5OfMessageBody'], 'fafb00f5732ab283681e124bf8747ed1');
+        $this->assertEqual(
+            $results['SendMessageResponse']['SendMessageResult']['MessageId'],
+            'abb862ce-46cf-444f-a88d-46afc622b3de'
+        );
+        $this->assertEqual(
+            $results['SendMessageResponse']['SendMessageResult']['MD5OfMessageBody'],
+            'fafb00f5732ab283681e124bf8747ed1'
+        );
         
         $this->Model->data = array(
             'MessageBody' => 'This is a test message',
@@ -232,8 +244,14 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
                     . '</SendMessageResponse>';
         $this->SimpleQueueService->Http->setReturnValueAt(2, 'get', $response);
         $results = $this->SimpleQueueService->create($this->Model, 1);
-        $this->assertEqual($results['MessageId'], 'abb862ce-46cf-444f-a88d-46afc622b3de');
-        $this->assertEqual($results['MD5OfMessageBody'], 'fafb00f5732ab283681e124bf8747ed1');
+        $this->assertEqual(
+            $results['SendMessageResponse']['SendMessageResult']['MessageId'],
+            'abb862ce-46cf-444f-a88d-46afc622b3de'
+        );
+        $this->assertEqual(
+            $results['SendMessageResponse']['SendMessageResult']['MD5OfMessageBody'],
+            'fafb00f5732ab283681e124bf8747ed1'
+        );
         
         $this->Model->data = array(
             'MistypedMessageBody' => 'This is a test message',
@@ -275,7 +293,6 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         $result = $this->SimpleQueueService->read($this->Model, $query);
         $this->assertFalse($result);
         
-        
         $query = array(
             'conditions' => array('Model.id'=>'3'),
             'fields' => array(
@@ -309,7 +326,10 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
             . '</ResponseMetadata></ReceiveMessageResponse>';
         $this->SimpleQueueService->Http->setReturnValueAt(1, 'get', $response);
         $result = $this->SimpleQueueService->read($this->Model, $query);
-        $expected = Set::extract(array_shift($result), '/MD5OfBody');
+        $expected = Set::extract(
+            $result,
+            '/ReceiveMessageResponse/ReceiveMessageResult/Message/MD5OfBody'
+        );
         $this->assertEqual($expected[0], 'fafb00f5732ab283681e124bf8747ed1');
         $this->assertEqual($expected[1], 'fafb00f5732ab283681e124bf8747ed1');
         

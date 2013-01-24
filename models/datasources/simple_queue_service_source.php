@@ -30,12 +30,6 @@ App::import('Core', 'Xml');
  */
 App::import('Core', 'HttpSocket');
 
-/**
- * Amazon Simple Queue Service Datasource
- *
- * @package datasources
- * @subpackage datasources.models.datasources
- */
 class SimpleQueueServiceSource extends DataSource {
     
     /**
@@ -211,13 +205,7 @@ class SimpleQueueServiceSource extends DataSource {
         
         $params['Action'] = 'SendMessage';
         
-        $response = $this->_request($params, $model->queueName);
-        
-        if (empty($response['SendMessageResponse']['SendMessageResult'])) {
-            return false;
-        }
-        
-        return $response['SendMessageResponse']['SendMessageResult'];
+        return $this->_request($params, $model->alias);
     }
     
     /**
@@ -255,15 +243,7 @@ class SimpleQueueServiceSource extends DataSource {
         
         $params['Action'] = 'ReceiveMessage';
         
-        $response = $this->_request($params, $model->queueName);
-        
-        if (empty($response['ReceiveMessageResponse']['ReceiveMessageResult'])) {
-            return false;
-        }
-        
-        $results = $response['ReceiveMessageResponse']['ReceiveMessageResult']['Message'];
-        
-        return array($results);
+        return $this->_request($params, $model->alias);
     }
     
     /**
@@ -314,7 +294,7 @@ class SimpleQueueServiceSource extends DataSource {
             'ReceiptHandle' => $conditions[$id]
         );
         
-        return $this->_request($params, $model->queueName);
+        return $this->_request($params, $model->alias);
     }
     
     /**
@@ -341,8 +321,8 @@ class SimpleQueueServiceSource extends DataSource {
         
         $queue = null;
         
-        if (!empty($model->queueName)) {
-            $queue = $model->queueName;
+        if (!empty($model->alias)) {
+            $queue = $model->alias;
         }
         
         return $this->_request($query, $queue);

@@ -21,38 +21,9 @@ class Queue extends CakeTestModel {
     
     public $name = 'Queue';
     
-    public $validate = array();
-    
-    public $useTable = false;
-    
-    public $queueName = 'testQueue';
+    public $useTable = 'Queue';
     
     public $useDbConfig = 'sqs_test';
-    
-    public $_schema = array(
-        'Body' => array(
-            'type' => 'text',
-            'null' => false
-        ),
-        'MD5OfBody' => array(
-            'type' => 'text',
-            'null' => false
-        ),
-        'MessageId' => array(
-            'type' => 'string',
-            'null' => false,
-            'key' => 'primary',
-            'length' => 255,
-        ),
-        'ReceiptHandle' => array(
-            'type' => 'text',
-            'null' => false
-        ),
-        'Attribute' => array(
-            'type' => 'array',
-            'null' => false
-        )
-    );
     
 }
 
@@ -215,6 +186,7 @@ class QueueTestCase extends CakeTestCase {
         
         // DeleteMessageBatch
         // http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/Query_QueryDeleteMessageBatch.html
+        usleep(10000);
         $params = array();
         $i = 0;
         foreach($messages as $message) {
@@ -256,28 +228,29 @@ class QueueTestCase extends CakeTestCase {
     public function testGetQueueUrl() {
         
         $params = array(
-            'QueueName' => $this->Queue->queueName,
+            'QueueName' => $this->Queue->alias,
             'QueueOwnerAWSAccountId' => $this->config['account_id']
         );
         
         $result = $this->Queue->GetQueueUrl($params);
         
-        $this->assertTrue(
-            strstr($result['GetQueueUrlResponse']['GetQueueUrlResult']['QueueUrl'], $this->Queue->queueName)
-        );
+        $this->assertTrue(strstr(
+            $result['GetQueueUrlResponse']['GetQueueUrlResult']['QueueUrl'],
+            $this->Queue->alias
+        ));
         
     }
     
     /**
      * Test CreateQueue and DeleteQueue
      * 
-     * By default this tests are skipped, Amazon consider abusive create/delete many queues
+     * By default skipped, Amazon consider abusive create/delete many queues
      *
      * @return void
      */
     public function testCreateQueueAndDeleteQueue() {
         
-        $this->skipIf(true, 'CreateQueue it is abusive create/delete many queues');
+        return;
         
         // CreateQueue
         // http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/Query_QueryCreateQueue.html
@@ -301,7 +274,7 @@ class QueueTestCase extends CakeTestCase {
         
         // DeleteQueue
         // http://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/Query_QueryDeleteQueue.html
-        $this->Queue->queueName = $queueName;
+        $this->Queue->useTable = $queueName;
         $result = $this->Queue->DeleteQueue();
         $this->assertFalse(
             empty($result['DeleteQueueResponse']['ResponseMetadata']['RequestId'])
@@ -390,91 +363,6 @@ class QueueTestCase extends CakeTestCase {
         $this->assertFalse(
             empty($result['SetQueueAttributesResponse']['ResponseMetadata']['RequestId'])
         );
-        
-    }
-    
-    /**
-     * Test find
-     *
-     * @return void
-     */
-    public function testFind() {
-        
-    }
-    
-    /**
-     * Test findBy
-     *
-     * @return void
-     */
-    public function testFindBy() {
-        
-    }
-    
-    /**
-     * Test Read
-     *
-     * @return void
-     */
-    public function testRead() {
-        
-        $params = array(
-            'AttributeNames' => array('All'),
-            'VisibilityTimeout' => 300,
-            'WaitTimeSeconds' => 0
-        );
-        $result = $this->Queue->read($params, 2);
-        debug($result);
-        
-    }
-    
-    /**
-     * Test Save
-     *
-     * @return void
-     */
-    public function testSave() {
-        
-    }
-    
-    /**
-     * Test delete
-     *
-     * @return void
-     */
-    public function testDelete() {
-        
-        $result = $this->Queue->read(null, 1);
-        debug($result);
-        
-        $result = $this->Queue->delete($result['ReceiptHandle']);
-        debug($result);
-    }
-    
-    /**
-     * Test saveAll
-     *
-     * @return void
-     */
-    public function testSaveAll() {
-        
-    }
-    
-    /**
-     * Test updateAll
-     *
-     * @return void
-     */
-    public function testUpdateAll() {
-        
-    }
-    
-    /**
-     * Test deleteAll
-     *
-     * @return void
-     */
-    public function testDeleteAll() {
         
     }
     
