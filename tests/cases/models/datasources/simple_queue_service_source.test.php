@@ -259,30 +259,59 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
      */
     public function testRead() {
         
-        return;
-        
         $this->SimpleQueueService->Http = false;
         $this->assertFalse($this->SimpleQueueService->read($this->Model));
         $this->SimpleQueueService->Http = new MockHttpSocket();
         
-        $params = array(
-            'AttributeNames' => array('All'),
-            'MaxNumberOfMessages' => 1,
-            'VisibilityTimeout' => 300,
-            'WaitTimeSeconds' => 0
+        $query = array(
+            'conditions' => array(),
+            'fields' => array(
+                'AttributeNames' => array('All'),
+                'MaxNumberOfMessages' => 1,
+                'VisibilityTimeout' => 300,
+                'WaitTimeSeconds' => 0
+            )
         );
-        //$result = $this->Model->read($params);
-        //debug($result);
+        $result = $this->SimpleQueueService->read($this->Model, $query);
+        $this->assertFalse($result);
         
-        $params = array(
-            'AttributeNames' => array('All'),
-            'MaxNumberOfMessages' => 1,
-            'VisibilityTimeout' => 300,
-            'WaitTimeSeconds' => 0
+        
+        $query = array(
+            'conditions' => array('Model.id'=>'3'),
+            'fields' => array(
+                'AttributeNames' => array('All'),
+                'VisibilityTimeout' => 300,
+                'WaitTimeSeconds' => 0
+            )
         );
-        //$result = $this->SimpleQueueService->read($this->Model, $params);
-        //debug($result);
-        
+        $response = '<?xml version="1.0"?>'
+            . '<ReceiveMessageResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">'
+            . '<ReceiveMessageResult><Message><Body>This is a test message</Body>'
+            . '<MD5OfBody>fafb00f5732ab283681e124bf8747ed1</MD5OfBody>'
+            . '<ReceiptHandle>cOJv9qrD9XLVlpsfwYn3xZ2ie/9St+dEOFjH6lc95+J2AF6x7w8KwRA7//Lcom5YkZupq5bMm8cmrLll'
+            . 'zyQfgsoP/x2gDs/rAbyf9N2MeNk+sp7sFVfYmSMMQ2eT99jVvuaVMhc92KFhSBPmmg2jqI5ewdqYJkBSTWcSfooJtzwHSl'
+            . '+TGI0Konoxxw2g8fAiruUIh7zwHQBojqmQxp/CTG9J0xXEbu8faTvJR7KKMdPQMxoz22NLkLONeCZiloHljv5sY0QcLhkhH'
+            . 'McJTTUslBF9ZpMvdlp7/mKV/UpBXEM6e9VJvZqVOA==</ReceiptHandle><Attribute><Name>SenderId</Name>'
+            . '<Value>445741093162</Value></Attribute><Attribute><Name>ApproximateFirstReceiveTimestamp</Name>'
+            . '<Value>1359022363823</Value></Attribute><Attribute><Name>ApproximateReceiveCount</Name>'
+            . '<Value>1</Value></Attribute><Attribute><Name>SentTimestamp</Name><Value>1359022195958</Value>'
+            . '</Attribute><MessageId>df1b56cc-6d3b-4836-923f-d596c08192f8</MessageId></Message><Message>'
+            . '<Body>This is a test message</Body><MD5OfBody>fafb00f5732ab283681e124bf8747ed1</MD5OfBody>'
+            . '<ReceiptHandle>cOJv9qrD9XLVlpsfwYn3xZ2ie/9St+dEOFjH6lc95+JYTf9iOKqR9xA7//Lcom5Y+vxu6mzD2TEmrL'
+            . 'llzyQfgvfWX2E2kQSNAbyf9N2MeNk+sp7sFVfYmSMMQ2eT99jVvuaVMhc92KFhSBPmmg2jqI5ewdqYJkBSTWcSfooJtzwHSl'
+            . '+TGI0Konoxxw2g8fAiruUIh7zwHQBojqmQxp/CTJyS7ArMhkzXPoVhW7X02GsGZiJYukIyoaWw1Y4ZPusXkrb0Et8oPziy'
+            . 'PuzIWSyHP6iq8kYuSZcs/mKV/UpBXEM6e9VJvZqVOA==</ReceiptHandle><Attribute><Name>SenderId</Name>'
+            . '<Value>445741093162</Value></Attribute><Attribute><Name>ApproximateFirstReceiveTimestamp</Name>'
+            . '<Value>1359022363823</Value></Attribute><Attribute><Name>ApproximateReceiveCount</Name>'
+            . '<Value>1</Value></Attribute><Attribute><Name>SentTimestamp</Name><Value>1359022345191</Value>'
+            . '</Attribute><MessageId>4ee47821-781a-4954-bf38-3a6cc76b7dcb</MessageId></Message>'
+            . '</ReceiveMessageResult><ResponseMetadata><RequestId>d6512f08-d0bf-50b2-a3d5-6673dbe49845</RequestId>'
+            . '</ResponseMetadata></ReceiveMessageResponse>';
+        $this->SimpleQueueService->Http->setReturnValueAt(1, 'get', $response);
+        $result = $this->SimpleQueueService->read($this->Model, $query);
+        $expected = Set::extract(array_shift($result), '/MD5OfBody');
+        $this->assertEqual($expected[0], 'fafb00f5732ab283681e124bf8747ed1');
+        $this->assertEqual($expected[1], 'fafb00f5732ab283681e124bf8747ed1');
         
     }
     
@@ -304,11 +333,37 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
      */
     public function testDelete() {
         
-        return;
-        
         $this->SimpleQueueService->Http = false;
         $this->assertFalse($this->SimpleQueueService->delete($this->Model));
         $this->SimpleQueueService->Http = new MockHttpSocket();
+        
+        $conditions = array(
+            'Model.condition1' => 1,
+            'Model.condition2' => 2
+        );
+        $this->expectError(__('Conditions are not supported', true));
+        $this->SimpleQueueService->delete($this->Model, $conditions);
+        
+        $conditions = array();
+        $this->expectError(__('ReceiptHandle is required', true));
+        $this->SimpleQueueService->delete($this->Model, $conditions);
+        
+        $conditions = array('Model.id' => '9999');
+        $response = '<?xml version="1.0"?><DeleteQueueResponse xmlns='
+            . '"http://queue.amazonaws.com/doc/2012-11-05/">'
+            . '<ResponseMetadata><RequestId>99c83824-5aea-5d2d-b89b-715f495bbf9b'
+            . '</RequestId></ResponseMetadata></DeleteQueueResponse>';
+        $this->SimpleQueueService->Http->setReturnValueAt(0, 'get', $response);
+        $result = $this->SimpleQueueService->delete($this->Model, $conditions);
+        $expected = array(
+            'DeleteQueueResponse' => array(
+                'xmlns' => 'http://queue.amazonaws.com/doc/2012-11-05/',
+                'ResponseMetadata' => array(
+                    'RequestId' => '99c83824-5aea-5d2d-b89b-715f495bbf9b'
+                )
+            )
+        );
+        $this->assertEqual($result, $expected);
         
     }
     
@@ -366,7 +421,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
                     . '</ListQueuesResult><ResponseMetadata>'
                     . '<RequestId>725275ae-0b9b-4762-b238-436d7c65a1ac</RequestId>'
                     . '</ResponseMetadata></ListQueuesResponse>';
-        $this->SimpleQueueService->Http->setReturnValue('get', $response);
+        $this->SimpleQueueService->Http->setReturnValueAt(0, 'get', $response);
         $result = $this->SimpleQueueService->_request($query);
         $expected = array(
             'ListQueuesResponse' => array(

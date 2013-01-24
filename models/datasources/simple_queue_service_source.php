@@ -241,13 +241,14 @@ class SimpleQueueServiceSource extends DataSource {
         }
         
         $key = $model->alias .'.id';
-        if (sizeof($query['conditions']) == 1 && isset($query['conditions'][$key]) && is_integer($query['conditions'][$key])) {
+        if (sizeof($query['conditions']) == 1 && isset($query['conditions'][$key]) 
+            && is_numeric($query['conditions'][$key])) {
             $params['MaxNumberOfMessages'] = $query['conditions'][$key];
             if (!empty($query['fields'])) {
                 $params = array_merge($query['fields'], $params);
             }
         } else {
-            $params = $query['conditions'];
+            $params = $query['fields'];
         }
         
         $params = $this->_parseQuery($params);
@@ -261,10 +262,6 @@ class SimpleQueueServiceSource extends DataSource {
         }
         
         $results = $response['ReceiveMessageResponse']['ReceiveMessageResult']['Message'];
-        
-        if (isset($model->findQueryType) && $model->findQueryType == 'count') {
-            return array('0'=>array('0'=>array('count'=>count($results))));
-        }
         
         return array($results);
     }
@@ -304,14 +301,12 @@ class SimpleQueueServiceSource extends DataSource {
         }
         
         if (sizeof($conditions) > 1) {
-            trigger_error(__('Conditions are not supported', true));
-            return false;
+            return trigger_error(__('Conditions are not supported', true));
         }
         
         $id = $model->alias.'.id';
-        if (sizeof($conditions) === 1 && empty($conditions[$id])) {
-            trigger_error(__('ReceiptHandle is required', true));
-            return false;
+        if (empty($conditions[$id])) {
+            return trigger_error(__('ReceiptHandle is required', true));
         }
         
         $params = array(
@@ -364,9 +359,6 @@ class SimpleQueueServiceSource extends DataSource {
     public function _request($query = array(), $queue = null) {
         $request = $this->_signQuery($query, $queue);
         $response = $this->Http->get($request);
-        $this->log($query);
-        $this->log($request);
-        $this->log($response);
         return Set::reverse(new Xml($response));
     }
     
@@ -383,7 +375,7 @@ class SimpleQueueServiceSource extends DataSource {
      */
     public function _signQuery($query = array(), $queue = null) {
         
-        $actionsThatDontNeedOfAccountId = array(
+        $dontUsesAccountId = array(
             'CreateQueue',
             'ListQueues',
             'GetQueueUrl'
@@ -393,7 +385,7 @@ class SimpleQueueServiceSource extends DataSource {
         $host = $this->config['host'];
         
         $uri = '/';
-        if (!empty($query['Action']) && !in_array($query['Action'], $actionsThatDontNeedOfAccountId)) {
+        if (!empty($query['Action']) && !in_array($query['Action'], $dontUsesAccountId)) {
             if (empty($queue)) {
                 return trigger_error(__('Invalid request queue name is required', true));
             }

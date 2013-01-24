@@ -420,7 +420,6 @@ class QueueTestCase extends CakeTestCase {
         
         $params = array(
             'AttributeNames' => array('All'),
-            'MaxNumberOfMessages' => 1,
             'VisibilityTimeout' => 300,
             'WaitTimeSeconds' => 0
         );
