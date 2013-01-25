@@ -21,8 +21,6 @@ class Movie extends CakeTestModel {
     
     public $name = 'Movie';
     
-    public $validate = array();
-    
     public $useTable = false;
     
     public $useDbConfig = 'cloudsearch_test';
@@ -66,9 +64,9 @@ class MovieTestCase extends CakeTestCase {
     
     public $skipDocumentApiTests = true;
     
-    public $skipSearchApiTests = true;
+    public $skipSearchApiTests = false;
     
-    public $skipCakephpApiTests = false;
+    public $skipCakephpApiTests = true;
     
     public $config = array(
         'datasource' => 'AWS.CloudSearchSource',
@@ -91,7 +89,7 @@ class MovieTestCase extends CakeTestCase {
     }
     
     /**
-     * Test Amazon CloudSearch / Document API
+     * Test Amazon CloudSearch / Document API add/delete
      *
      */
     public function testDocumentAdd() {
@@ -104,8 +102,6 @@ class MovieTestCase extends CakeTestCase {
             return;
         }
         
-        debug(__FUNCTION__);
-        
         $id = uniqid();
         $params = array(
             'type' => 'add',
@@ -120,45 +116,10 @@ class MovieTestCase extends CakeTestCase {
             )
         );
         $response = $this->Movie->document($params);
-        debug(json_decode($response));
+        $this->assertEqual($response['status'], 'success');
+        $this->assertEqual($response['adds'], 1);
         
-    }
-    
-    public function testDocumentDelete() {
-        
-        $skip = $this->skipIf(
-            $this->skipDocumentApiTests,
-            'testing Document API '. __FUNCTION__
-        );
-        if ($skip) {
-            return;
-        }
-        
-        debug(__FUNCTION__);
-        
-        $id = uniqid();
-        $params = array(
-            'type' => 'add',
-            'id' => $id,
-            'version' => 1,
-            'lang' => 'en',
-            'fields' => array(
-                'title' => 'Movie '.$id,
-                'director' => 'CakePHP, PHP',
-                'genre' => array('Programming', 'Data'),
-                'actor' => array('CloudSearch', 'AWS Plugin'),
-            )
-        );
-        $response = $this->Movie->document($params);
-        debug(json_decode($response));
-        
-        $params = array(
-            'type' => 'delete',
-            'id' => $id .'noexists',
-            'version' => 2
-        );
-        $response = $this->Movie->document($params);
-        debug(json_decode($response));
+        usleep(10000);
         
         $params = array(
             'type' => 'delete',
@@ -166,7 +127,8 @@ class MovieTestCase extends CakeTestCase {
             'version' => 1
         );
         $response = $this->Movie->document($params);
-        debug(json_decode($response));
+        $this->assertEqual($response['status'], 'success');
+        $this->assertEqual($response['deletes'], 1);
         
     }
     
@@ -179,8 +141,6 @@ class MovieTestCase extends CakeTestCase {
         if ($skip) {
             return;
         }
-        
-        debug(__FUNCTION__);
         
         $params = array();
         for($i=0; $i<5; $i++) {
@@ -208,9 +168,21 @@ class MovieTestCase extends CakeTestCase {
                 );
             }
         }
+        $adds = 0;
+        $deletes = 0;
+        foreach($params as $param) {
+            if ($param['type'] == 'add') {
+                $adds++;
+            } else {
+                $deletes++;
+            }
+        }
         
         $response = $this->Movie->document($params);
-        debug(json_decode($response));
+        $this->assertEqual(
+            $response,
+            array('status'=>'success', 'adds'=>$adds, 'deletes'=>$deletes)
+        );
         
     }
     
@@ -256,7 +228,7 @@ class MovieTestCase extends CakeTestCase {
             'bq' => 'year:2010'
         );
         $response = $this->Movie->search($params);
-        debug(json_decode($response));
+        debug($response);
         
     }
     
@@ -474,165 +446,165 @@ class MovieTestCase extends CakeTestCase {
         
     }
     
-    // /**
-    //  * Test CakePHP API
-    //  *
-    //  */
-    // public function testFind() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $response = $this->Movie->find('all');
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star wars'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'bq' => "(or title:'star' (not title:'wars'))"
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'bq' => "title:'star*'"
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'bq' => "genre:'Action'"
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'bq' => 'year:2010'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'bq' => "title:'star'",
-    //             'facet' => 'genre,year',
-    //             'facet-genre-top-n' => 5,
-    //             'facet-year-constraints' => '1970..1999,2000..2005,2006..2012'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star',
-    //             'rank' => 'text_relevance'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'terminator',
-    //             'rank-expression1' => 'sin(text_relevance)',
-    //             'rank-expression2' => 'cos(text_relevance)',
-    //             'rank' => 'expression1,expression2',
-    //             'return-fields' => 'title,text_relevance,expression1,expression2'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star',
-    //             'results-type' => 'xml'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star',
-    //             'return-fields' => 'text_relevance,actor,director,title,year'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star',
-    //             'size' => 12
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star',
-    //             'start' => 5,
-    //             'size' => 5
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    //     // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/thresholdresults.html
-    //     $response = $this->Movie->find('all', array(
-    //         'conditions' => array(
-    //             'q' => 'star',
-    //             'return-fields' => 'title,text_relevance',
-    //             't-text_relevance' => '300..'
-    //         )
-    //     ));
-    //     debug($response);
-    //     
-    // }
-    // 
-    // public function testFindBy() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $response = $this->Movie->findByTitle('star wars');
-    //     debug($response);
-    //     
-    // }
-    // 
-    // // public function testFindConditions() {
-    // //     
-    // //     $skip = $this->skipIf(
-    // //         $this->skipCakephpApiTests,
-    // //         'testing CakePHP API '. __FUNCTION__
-    // //     );
-    // //     if ($skip) {
-    // //         return;
-    // //     }
-    // //     
-    // //     debug(__FUNCTION__);
-    // //     
-    // // }
-    // 
+    /**
+     * Test CakePHP API
+     *
+     */
+    public function testFind() {
+        
+        $skip = $this->skipIf(
+            $this->skipCakephpApiTests,
+            'testing CakePHP API '. __FUNCTION__
+        );
+        if ($skip) {
+            return;
+        }
+        
+        debug(__FUNCTION__);
+        
+        $response = $this->Movie->find('all');
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star wars'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'bq' => "(or title:'star' (not title:'wars'))"
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'bq' => "title:'star*'"
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'bq' => "genre:'Action'"
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'bq' => 'year:2010'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'bq' => "title:'star'",
+                'facet' => 'genre,year',
+                'facet-genre-top-n' => 5,
+                'facet-year-constraints' => '1970..1999,2000..2005,2006..2012'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star',
+                'rank' => 'text_relevance'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'terminator',
+                'rank-expression1' => 'sin(text_relevance)',
+                'rank-expression2' => 'cos(text_relevance)',
+                'rank' => 'expression1,expression2',
+                'return-fields' => 'title,text_relevance,expression1,expression2'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star',
+                'results-type' => 'xml'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star',
+                'return-fields' => 'text_relevance,actor,director,title,year'
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star',
+                'size' => 12
+            )
+        ));
+        debug($response);
+        
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star',
+                'start' => 5,
+                'size' => 5
+            )
+        ));
+        debug($response);
+        
+        // http://docs.aws.amazon.com/cloudsearch/latest/developerguide/thresholdresults.html
+        $response = $this->Movie->find('all', array(
+            'conditions' => array(
+                'q' => 'star',
+                'return-fields' => 'title,text_relevance',
+                't-text_relevance' => '300..'
+            )
+        ));
+        debug($response);
+        
+    }
+    
+    public function testFindBy() {
+        
+        $skip = $this->skipIf(
+            $this->skipCakephpApiTests,
+            'testing CakePHP API '. __FUNCTION__
+        );
+        if ($skip) {
+            return;
+        }
+        
+        debug(__FUNCTION__);
+        
+        $response = $this->Movie->findByTitle('star wars');
+        debug($response);
+        
+    }
+    
+    public function testFindConditions() {
+        
+        $skip = $this->skipIf(
+            $this->skipCakephpApiTests,
+            'testing CakePHP API '. __FUNCTION__
+        );
+        if ($skip) {
+            return;
+        }
+        
+        debug(__FUNCTION__);
+        
+    }
+    
     
     public function testCreate() {
         
@@ -653,9 +625,9 @@ class MovieTestCase extends CakeTestCase {
             'actor' => array('CloudSearch', 'AWS Plugin')
         );
         
-        //$this->assertTrue($this->Movie->save($data));
+        $result = $this->Movie->save($data);
         
-        // @todo test error
+        debug($result);
         
     }
     
@@ -718,125 +690,125 @@ class MovieTestCase extends CakeTestCase {
         $this->assertTrue($this->Movie->save($data));
         
         // delay 10 seconds before can be searched
-        sleep(10);
+        sleep(5);
         
         $this->assertTrue($this->Movie->delete($id));
         
     }
     
-    // public function testSave() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $id = uniqid();
-    //     $data = array(
-    //         'id' => $id,
-    //         'title' => 'Movie '.$id,
-    //         'director' => 'CakePHP, PHP',
-    //         'genre' => array('Programming', 'Data'),
-    //         'actor' => array('CloudSearch', 'AWS Plugin')
-    //     );
-    //     
-    //     $response = $this->Movie->save($data);
-    //     debug($response);
-    //     
-    // }
+    public function testSave() {
+        
+        $skip = $this->skipIf(
+            $this->skipCakephpApiTests,
+            'testing CakePHP API '. __FUNCTION__
+        );
+        if ($skip) {
+            return;
+        }
+        
+        debug(__FUNCTION__);
+        
+        $id = uniqid();
+        $data = array(
+            'id' => $id,
+            'title' => 'Movie '.$id,
+            'director' => 'CakePHP, PHP',
+            'genre' => array('Programming', 'Data'),
+            'actor' => array('CloudSearch', 'AWS Plugin')
+        );
+        
+        $response = $this->Movie->save($data);
+        debug($response);
+        
+    }
     
-    // public function testSaveAll() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $id = uniqid();
-    //     $data[] = array(
-    //         'id' => $id,
-    //         'title' => 'Movie '.$id,
-    //         'director' => 'CakePHP, PHP',
-    //         'genre' => array('Programming', 'Data'),
-    //         'actor' => array('CloudSearch', 'AWS Plugin')
-    //     );
-    //     
-    //     $id = uniqid();
-    //     $data[] = array(
-    //         'id' => $id,
-    //         'title' => 'Movie '.$id,
-    //         'director' => 'CakePHP, PHP',
-    //         'genre' => array('Programming', 'Data'),
-    //         'actor' => array('CloudSearch', 'AWS Plugin')
-    //     );
-    //     
-    //     $id = uniqid();
-    //     $data[] = array(
-    //         'id' => $id,
-    //         'title' => 'Movie '.$id,
-    //         'director' => 'CakePHP, PHP',
-    //         'genre' => array('Programming', 'Data'),
-    //         'actor' => array('CloudSearch', 'AWS Plugin')
-    //     );
-    //     
-    //     $response = $this->Movie->saveAll($data);
-    //     debug($response);
-    //     
-    // }
-    // 
-    // public function testUpdateAll() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $fields = array(
-    //         'year' => 2012
-    //     );
-    //     $conditions = array(
-    //         'title' => '2012*'
-    //     );
-    //     $response = $this->Movie->updateAll($fields, $conditions);
-    //     debug($response);
-    //     
-    // }
-    // 
-    // public function testDeleteAll() {
-    //     
-    //     $skip = $this->skipIf(
-    //         $this->skipCakephpApiTests,
-    //         'testing CakePHP API '. __FUNCTION__
-    //     );
-    //     if ($skip) {
-    //         return;
-    //     }
-    //     
-    //     debug(__FUNCTION__);
-    //     
-    //     $conditions = array(
-    //         'year' => '1980'
-    //     );
-    //     
-    //     $response = $this->Movie->deleteAll($conditions);
-    //     debug($response);
-    //     
-    // }
+    public function testSaveAll() {
+        
+        $skip = $this->skipIf(
+            $this->skipCakephpApiTests,
+            'testing CakePHP API '. __FUNCTION__
+        );
+        if ($skip) {
+            return;
+        }
+        
+        debug(__FUNCTION__);
+        
+        $id = uniqid();
+        $data[] = array(
+            'id' => $id,
+            'title' => 'Movie '.$id,
+            'director' => 'CakePHP, PHP',
+            'genre' => array('Programming', 'Data'),
+            'actor' => array('CloudSearch', 'AWS Plugin')
+        );
+        
+        $id = uniqid();
+        $data[] = array(
+            'id' => $id,
+            'title' => 'Movie '.$id,
+            'director' => 'CakePHP, PHP',
+            'genre' => array('Programming', 'Data'),
+            'actor' => array('CloudSearch', 'AWS Plugin')
+        );
+        
+        $id = uniqid();
+        $data[] = array(
+            'id' => $id,
+            'title' => 'Movie '.$id,
+            'director' => 'CakePHP, PHP',
+            'genre' => array('Programming', 'Data'),
+            'actor' => array('CloudSearch', 'AWS Plugin')
+        );
+        
+        $response = $this->Movie->saveAll($data);
+        debug($response);
+        
+    }
+    
+    public function testUpdateAll() {
+        
+        // $skip = $this->skipIf(
+        //     $this->skipCakephpApiTests,
+        //     'testing CakePHP API '. __FUNCTION__
+        // );
+        // if ($skip) {
+        //     return;
+        // }
+        // 
+        // debug(__FUNCTION__);
+        // 
+        // $fields = array(
+        //     'year' => 2012
+        // );
+        // $conditions = array(
+        //     'title' => '2012*'
+        // );
+        // $response = $this->Movie->updateAll($fields, $conditions);
+        // debug($response);
+        
+    }
+    
+    public function testDeleteAll() {
+        
+        // $skip = $this->skipIf(
+        //     $this->skipCakephpApiTests,
+        //     'testing CakePHP API '. __FUNCTION__
+        // );
+        // if ($skip) {
+        //     return;
+        // }
+        // 
+        // debug(__FUNCTION__);
+        // 
+        // $conditions = array(
+        //     'year' => '1980'
+        // );
+        // 
+        // $response = $this->Movie->deleteAll($conditions);
+        // debug($response);
+        
+    }
     
 }
 
