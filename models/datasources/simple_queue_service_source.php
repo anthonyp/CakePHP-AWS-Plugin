@@ -110,6 +110,9 @@ class SimpleQueueServiceSource extends DataSource {
      */
     public function setConfig($config = array()) {
         $this->config = array_merge($this->config, $config);
+        if (!$this->_checkConfig()) {
+            trigger_error(__('Invalid datasource configuration', true));
+        }
     }
     
     /**
@@ -402,6 +405,25 @@ class SimpleQueueServiceSource extends DataSource {
         $signature = str_replace('%7E', '~', rawurlencode($signature));
         
         return sprintf('https://%s%s?%s&Signature=%s', $host, $uri, $canonicalizedQuery, $signature);
+    }
+    
+    /**
+     * Check datasource configuration
+     *
+     * @return boolean Returns boolean true/false.
+     * @since 0.1
+     */
+    public function _checkConfig() {
+        if (empty($this->config['host'])) {
+            return false;
+        }
+        if (empty($this->config['login'])) {
+            return false;
+        }
+        if (empty($this->config['password'])) {
+            return false;
+        }
+        return true;
     }
     
     /**

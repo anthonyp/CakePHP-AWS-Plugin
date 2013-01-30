@@ -111,6 +111,10 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         $this->SimpleQueueService->setConfig($config);
         $this->assertEqual($this->SimpleQueueService->config, $config);
         
+        $config['login'] = null;
+        $this->expectError(__('Invalid datasource configuration', true));
+        $this->SimpleQueueService->setConfig($config);
+        
     }
     
     /**
@@ -164,9 +168,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
      * @return void
      */
     public function testCalculate() {
-        
         $this->assertTrue($this->SimpleQueueService->calculate());
-        
     }
     
     /**
@@ -433,9 +435,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
     public function testRequest() {
         
         $method = 'ListQueues';
-        $query = array(
-            'Action' => 'ListQueues'
-        );
+        $query = array('Action' => 'ListQueues');
         $response = '<ListQueuesResponse><ListQueuesResult>'
                     . '<QueueUrl>http://sqs.us-east-1.amazonaws.com/123456789012/testQueue</QueueUrl>'
                     . '</ListQueuesResult><ResponseMetadata>'
@@ -465,7 +465,6 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
     public function testSignQuery() {
         
         // test a call that dont uses queue name
-        
         $query = array(
             'Action' => 'CreateQueue',
             'QueueName' => 'Test',
@@ -505,7 +504,6 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         $this->assertEqual($queryString, $expected);
         
         // test a call that uses queue name
-        
         $query = array(
             'Action' => 'ReceiveMessage',
             'AttributeNames' => array('All'),
@@ -533,6 +531,7 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         );
         $this->assertEqual($queryString, $expected);
         
+        // test an error
         $query = array(
             'Action' => 'ReceiveMessage',
             'AttributeNames' => array('All'),
@@ -542,6 +541,31 @@ class SimpleQueueServiceTestCase extends CakeTestCase {
         );
         $this->expectError(__('Invalid request queue name is required', true));
         $this->SimpleQueueService->_signQuery($query);
+        
+    }
+    
+    /**
+     * Test _checkConfig
+     *
+     * @return void
+     */
+    public function testCheckConfig() {
+        
+        $config = $this->SimpleQueueService->config;
+        
+        $this->SimpleQueueService->config['host'] = null;
+        $this->assertFalse($this->SimpleQueueService->_checkConfig());
+        
+        $this->SimpleQueueService->config = $config;
+        $this->SimpleQueueService->config['login'] = null;
+        $this->assertFalse($this->SimpleQueueService->_checkConfig());
+        
+        $this->SimpleQueueService->config = $config;
+        $this->SimpleQueueService->config['password'] = null;
+        $this->assertFalse($this->SimpleQueueService->_checkConfig());
+        
+        $this->SimpleQueueService->config = $config;
+        $this->assertTrue($this->SimpleQueueService->_checkConfig());
         
     }
     
